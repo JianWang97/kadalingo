@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [react()] as PluginOption[],
   build: {
     rollupOptions: {
-      external: ['scheduler'],
+      // Remove scheduler from external to bundle it
+      external: [],
     },
   },
   optimizeDeps: {

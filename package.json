@@ -1,17 +1,37 @@
 {
-  "name": "my-new-app",
-  "productName": "my-new-app",
+  "name": "electron-forge-react-vite",
+  "productName": "Electron Forge React Template",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "🚀 A modern Electron application template with React, TypeScript, Vite, and Tailwind CSS",
   "main": ".vite/build/main.js",
+  "homepage": "https://github.com/JianWang6/electron-forge-react-vite",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JianWang6/electron-forge-react-vite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JianWang6/electron-forge-react-vite/issues"
+  },
   "scripts": {
     "start": "electron-forge start",
+    "dev": "electron-forge start",
+    "build": "electron-forge make",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "lint:fix": "eslint --ext .ts,.tsx . --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf out .vite"
   },
-  "keywords": [],
+  "keywords": [
+    "electron",
+    "react",
+    "typescript",
+    "vite",
+    "tailwind",
+    "template"
+  ],
   "author": {
     "name": "JianWang6",
     "email": "w415895535@outlook.com"
