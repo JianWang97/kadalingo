@@ -1,9 +1,6 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
+/* 自定义样式 - 会与 Tailwind 的样式合并 */
 html, body, #root {
   height: 100%;
   width: 100%;
