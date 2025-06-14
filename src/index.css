@@ -11,6 +11,12 @@ body {
     Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: transparent; /* 确保body背景透明 */
+}
+
+/* 根元素透明背景 */
+#root {
+  background: transparent;
 }
 
 /* Electron 窗口拖拽样式 */
@@ -65,4 +71,26 @@ body {
 /* 隐藏滚动条角落 */
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* 浮窗模式样式 */
+/* 当窗口设置为 transparent: true 时，这些样式会让背景透明但内容保持不透明 */
+.floating-mode-background {
+  background: transparent !important; /* 完全透明的背景 */
+}
+
+/* 确保浮窗模式下的文字和其他内容保持完全不透明 */
+.floating-mode-content {
+  background: rgba(255, 255, 255, var(--floating-opacity, 0.3)) !important; /* 使用CSS变量控制透明度 */
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+
+
+/* 浮窗模式下的文字样式 */
+.floating-mode-text {
+  color: rgba(0, 0, 0, 1) !important; /* 确保文字完全不透明 */
 }

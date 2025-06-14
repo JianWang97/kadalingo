@@ -9,4 +9,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.invoke('window-maximize'),
   close: () => ipcRenderer.invoke('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  toggleFloatingMode: () => ipcRenderer.invoke('toggle-floating-mode'),
+  isFloatingMode: () => ipcRenderer.invoke('is-floating-mode'),
 });

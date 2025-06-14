@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { sentencePairs, SentencePair } from "../data/sentences";
 import { useSpeech } from "../contexts/SpeechContext";
+import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { SpeechSettings } from "../components";
+import { useFloatingMode } from "../hooks/useFloatingMode";
 
 const SentencePractice: React.FC = () => {
   // 使用语音服务
   const { speakEnglish, isPlaying, settings: speechSettings } = useSpeech();
+  // 使用键盘声音服务
+  const { playKeySound } = useKeyboardSound();
+  // 检测是否为小飘窗模式
+  const isFloating = useFloatingMode();
 
   const [currentSentence, setCurrentSentence] = useState<SentencePair | null>(
     null
@@ -147,8 +153,13 @@ const SentencePractice: React.FC = () => {
       }
     }, 100);
   };
-
   const handleWordInput = (idx: number, value: string) => {
+    // 播放键盘声音（只在输入新字符时播放）
+    const oldValue = wordInputs[idx] || "";
+    if (value.length > oldValue.length) {
+      playKeySound("normal");
+    }
+
     setWordInputs((inputs) => {
       const newInputs = [...inputs];
       newInputs[idx] = value;
@@ -161,9 +172,11 @@ const SentencePractice: React.FC = () => {
   ) => {
     if (e.key === " ") {
       e.preventDefault();
+      playKeySound("space");
       checkSingleWord(idx);
     } else if (e.key === "Enter") {
       e.preventDefault();
+      playKeySound("enter");
       // 只在未完成时检查答案，完成后由全局监听处理
       if (isCorrect !== true && !showAnswer) {
         checkAnswer();
@@ -249,48 +262,130 @@ const SentencePractice: React.FC = () => {
         return "未知";
     }
   };
+  // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
+  useEffect(() => {
+    const handleFloatingHotkey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === "P" || e.key === "p")) {
+        e.preventDefault();
+        if (window.electronAPI?.toggleFloatingMode) {
+          window.electronAPI.toggleFloatingMode();
+        }
+      }
+      // Esc 键退出窗口化模式
+      if (e.key === "Escape" && isFloating) {
+        e.preventDefault();
+        if (window.electronAPI?.toggleFloatingMode) {
+          window.electronAPI.toggleFloatingMode();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleFloatingHotkey);
+    return () => {
+      document.removeEventListener("keydown", handleFloatingHotkey);
+    };
+  }, [isFloating]);
 
   if (!currentSentence) {
     return <div className="text-center">加载中...</div>;
   }
   const accuracy = attempts > 0 ? Math.round((score / attempts) * 100) : 0;
   return (
-    <div className="relative h-full flex flex-col bg-gray-50">
-      {" "}
+    <div
+      className={`relative h-full flex flex-col ${
+        isFloating ? "floating-mode-content" : "bg-gray-50"
+      }`}
+    >
+      {/* 小窗模式下的拖动区域 */}
+      {isFloating && (
+        <div className="absolute inset-0 drag-region" style={{ zIndex: 0 }} />
+      )}
       {/* 主要内容区域 */}
-      <div className="flex-1 overflow-y-auto flex items-center">
-        <div className="w-full px-6 py-8">
-          {/* 简约的统计信息 */}
-          <div className="flex items-center justify-center gap-8 mb-8">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900">
-                {score}/{attempts}
+      <div className="flex-1 overflow-y-auto flex items-center relative z-10">
+        {" "}
+        <div
+          className={`w-full ${isFloating ? "px-2 py-3" : "px-6 py-8"} ${
+            isFloating ? "drag-region" : ""
+          }`}
+        >
+          {/* 简约的统计信息 - 飘窗模式下隐藏 */}
+          {!isFloating && (
+            <div
+              className={`flex items-center justify-center gap-8 ${
+                isFloating ? "mb-4" : "mb-8"
+              }`}
+            >
+              <div className="text-center">
+                <div
+                  className={`${
+                    isFloating ? "text-base" : "text-lg"
+                  } font-semibold text-gray-900`}
+                >
+                  {score}/{attempts}
+                </div>
+                <div
+                  className={`${
+                    isFloating ? "text-xs" : "text-sm"
+                  } text-gray-500`}
+                >
+                  得分
+                </div>
               </div>
-              <div className="text-sm text-gray-500">得分</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-blue-600">
-                {accuracy}%
+              <div className="text-center">
+                <div
+                  className={`${
+                    isFloating ? "text-base" : "text-lg"
+                  } font-semibold text-blue-600`}
+                >
+                  {accuracy}%
+                </div>
+                <div
+                  className={`${
+                    isFloating ? "text-xs" : "text-sm"
+                  } text-gray-500`}
+                >
+                  准确率
+                </div>
               </div>
-              <div className="text-sm text-gray-500">准确率</div>
             </div>
-          </div>{" "}
+          )}            
           {/* 主要练习区域 */}
-          <div className="bg-transparent p-8 mx-auto w-full max-w-5xl">
+          <div
+            className={`mx-auto w-full ${
+              isFloating ? "max-w-full drag-region" : "max-w-full"
+            }`}
+          >
+            {" "}
             {/* 中文句子 */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <p className="text-xl text-gray-900">
+            <div
+              className={`text-center ${isFloating ? "mb-4" : "mb-8"} ${
+                isFloating ? "drag-region" : ""
+              }`}
+            >
+              <div
+                className={`flex items-center justify-center gap-3 ${
+                  isFloating ? "mb-1" : "mb-2"
+                } ${isFloating ? "drag-region" : ""}`}
+              >
+                {" "}
+                <p
+                  className={`${
+                    isFloating ? "text-base" : "text-xl"
+                  } text-gray-900 ${
+                    isFloating ? "floating-mode-text drag-region" : ""
+                  }`}
+                >
                   {currentSentence.chinese}
                 </p>
                 <button
                   onClick={handleSpeakEnglish}
                   disabled={isPlaying}
-                  className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors disabled:opacity-50"
+                  className={`${
+                    isFloating ? "p-1" : "p-2"
+                  } text-gray-400 hover:text-blue-600 rounded-lg transition-colors disabled:opacity-50 no-drag`}
                   title="播放英文发音"
                 >
                   <svg
-                    className="w-5 h-5"
+                    className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -306,14 +401,22 @@ const SentencePractice: React.FC = () => {
                     />
                   </svg>
                 </button>
-              </div>
-              <div className="text-xs text-gray-400">
+              </div>{" "}
+              <div
+                className={`text-xs text-gray-400 ${
+                  isFloating ? "drag-region" : ""
+                }`}
+              >
                 {getDifficultyText(currentSentence.difficulty)}
               </div>
             </div>{" "}
             {/* 输入框区域 */}
-            <div className="mb-8">
-              <div className="flex flex-wrap gap-2 justify-center items-baseline w-full">
+            <div className={`mb-8 ${isFloating ? "drag-region" : ""}`}>
+              <div
+                className={`flex flex-wrap gap-2 justify-center items-baseline w-full ${
+                  isFloating ? "drag-region" : ""
+                }`}
+              >
                 {parseWordsAndPunctuation(currentSentence.english).map(
                   (token, idx) => (
                     <div key={idx} className="flex items-baseline">
@@ -324,7 +427,11 @@ const SentencePractice: React.FC = () => {
                         onChange={(e) => handleWordInput(idx, e.target.value)}
                         onKeyPress={(e) => handleKeyPress(e, idx)}
                         data-word-index={idx}
-                        className={`px-2 py-1 text-center text-2xl font-bold bg-transparent border-0 border-b-2 focus:outline-none transition-colors
+                        className={`px-2 py-1 text-center ${
+                          isFloating ? "text-lg" : "text-2xl"
+                        } font-bold bg-transparent border-0 border-b-2 focus:outline-none transition-colors no-drag ${
+                          isFloating ? "floating-mode-text" : ""
+                        }
                         ${
                           wordResults[idx] === false
                             ? "border-b-red-400 text-red-700"
@@ -333,16 +440,21 @@ const SentencePractice: React.FC = () => {
                             : "border-b-gray-300 focus:border-b-blue-500 text-gray-800"
                         }`}
                         style={{
-                          width: `${Math.max(token.word.length * 24, 120)}px`,
+                          width: `${Math.max(
+                            token.word.length * (isFloating ? 16 : 24),
+                            isFloating ? 80 : 120
+                          )}px`,
                           fontFamily:
                             '"Microsoft YaHei", "微软雅黑", sans-serif',
                         }}
                         disabled={isCorrect === true || showAnswer}
                         placeholder={showAnswer ? token.word : ""}
-                      />
+                      />{" "}
                       {token.punctuation && (
                         <span
-                          className="text-3xl text-gray-700 ml-1 font-bold"
+                          className={`${
+                            isFloating ? "text-xl" : "text-3xl"
+                          } text-gray-700 ml-1 font-bold`}
                           style={{
                             fontFamily:
                               '"Microsoft YaHei", "微软雅黑", sans-serif',
@@ -355,10 +467,14 @@ const SentencePractice: React.FC = () => {
                   )
                 )}
               </div>
-            </div>
+            </div>{" "}
             {/* 反馈信息 */}
             {feedback && (
-              <div className="text-center mb-6">
+              <div
+                className={`text-center mb-6 ${
+                  isFloating ? "drag-region" : ""
+                }`}
+              >
                 <p
                   className={`text-sm ${
                     isCorrect === true
@@ -366,9 +482,8 @@ const SentencePractice: React.FC = () => {
                       : isCorrect === false
                       ? "text-red-600"
                       : "text-blue-600"
-                  }`}
+                  } ${isFloating ? "drag-region" : ""}`}
                 >
-                  {" "}
                   {feedback}
                 </p>
               </div>
@@ -376,16 +491,16 @@ const SentencePractice: React.FC = () => {
           </div>
           {/* 设置浮窗 */}
           {isDrawerOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="w-96 bg-white rounded-lg shadow-lg max-h-[80vh] overflow-hidden">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-drag">
+              <div className="w-96 bg-white rounded-lg shadow-lg max-h-[80vh] overflow-hidden no-drag">
                 <div className="p-6 h-full overflow-y-auto">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-medium text-gray-900">
                       语音设置
-                    </h2>
+                    </h2>{" "}
                     <button
                       onClick={() => setIsDrawerOpen(false)}
-                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded no-drag"
                     >
                       <svg
                         className="w-5 h-5"
@@ -406,95 +521,114 @@ const SentencePractice: React.FC = () => {
             </div>
           )}{" "}
         </div>
-      </div>
-      {/* 进度条区域 */}
-      <div className="w-full bg-gray-50 px-6 py-3">
-        <div className="text-center">
-          <div className="text-sm text-gray-400 mb-2">
-            {usedSentences.length} / {sentencePairs.length}
-          </div>
-          <div className="w-full max-w-2xl h-2 bg-gray-200 rounded-full mx-auto">
-            <div
-              className="h-2 bg-gray-400 rounded-full transition-all duration-300"
-              style={{
-                width: `${
-                  (usedSentences.length / sentencePairs.length) * 100
-                }%`,
-              }}
-            />
+      </div>{" "}
+      {/* 进度条区域 - 小飘窗模式下隐藏 */}
+      {!isFloating && (
+        <div className="w-full bg-gray-50 px-6 py-3">
+          <div className="text-center">
+            <div className="text-sm text-gray-400 mb-2">
+              {usedSentences.length} / {sentencePairs.length}
+            </div>
+            <div className="w-full max-w-2xl h-2 bg-gray-200 rounded-full mx-auto">
+              <div
+                className="h-2 bg-gray-400 rounded-full transition-all duration-300"
+                style={{
+                  width: `${
+                    (usedSentences.length / sentencePairs.length) * 100
+                  }%`,
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      {/* 简约的底部操作栏 */}
-      <div className="flex w-full bg-white border-t border-gray-200 px-6 py-4">
-        <div className="w-full flex items-center justify-between">
-          {/* 左侧和中间的按钮 */}
-          <div className="flex items-center justify-center gap-3 flex-1">
-            <button
-              onClick={handleSpeakEnglish}
-              disabled={isPlaying}
-              className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors flex items-center gap-2 border border-gray-200"
-            >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>播放</span>
-              <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                Ctrl+'
-              </span>
-            </button>
-
-            {isCorrect !== true && !showAnswer && (
-              <>
-                <button
-                  onClick={checkAnswer}
-                  disabled={wordInputs.some((input) => !input.trim())}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2"
+      )}{" "}
+      {/* 简约的底部操作栏 - 小飘窗模式下隐藏 */}
+      {!isFloating && (
+        <div className="flex w-full bg-white border-t border-gray-200 px-6 py-4">
+          <div className="w-full flex items-center justify-between">
+            {/* 左侧和中间的按钮 */}
+            <div className="flex items-center justify-center gap-3 flex-1">
+              {" "}
+              <button
+                onClick={handleSpeakEnglish}
+                disabled={isPlaying}
+                className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  <span>检查</span>
+                  <path
+                    fillRule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>播放</span>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                  Ctrl+'
+                </span>
+              </button>
+              {isCorrect !== true && !showAnswer && (
+                <>
+                  {" "}
+                  <button
+                    onClick={checkAnswer}
+                    disabled={wordInputs.some((input) => !input.trim())}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
+                  >
+                    <span>检查</span>
+                    <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
+                      Enter
+                    </span>
+                  </button>{" "}
+                  <button
+                    onClick={showCorrectAnswer}
+                    className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
+                  >
+                    <span>显示答案</span>
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                      Ctrl+N
+                    </span>
+                  </button>
+                </>
+              )}
+              {(isCorrect === true || showAnswer) && (
+                <button
+                  onClick={nextSentence}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 no-drag"
+                >
+                  <span>下一句</span>
                   <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
                     Enter
                   </span>
                 </button>
-
+              )}
+              {
                 <button
-                  onClick={showCorrectAnswer}
-                  className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200"
+                  onClick={window.electronAPI.toggleFloatingMode}
+                  className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                 >
-                  <span>显示答案</span>
+                  <span>切换窗口化</span>
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                    Ctrl+N
+                    Ctrl+Shift+P
                   </span>
                 </button>
-              </>
-            )}
-
-            {(isCorrect === true || showAnswer) && (
-              <button
-                onClick={nextSentence}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <span>下一句</span>
-                <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
-                  Enter
-                </span>
-              </button>
-            )}
+              }
+            </div>
           </div>{" "}
-          {/* 右侧的语音设置按钮 */}
-          <div className="flex items-center">
+          {/* 右侧的语音设置按钮和窗口化 */}
+          <div className="flex items-center gap-4">
+            {" "}
             <SpeechSettings
               compact={true}
               onOpenSettings={() => setIsDrawerOpen(true)}
-              className="border border-gray-200"
+              className="border border-gray-200 no-drag"
             />
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
