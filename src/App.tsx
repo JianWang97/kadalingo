@@ -1,103 +1,81 @@
-import React from 'react';
-import { Header, Card, Counter } from './components';
+import React, { useState } from "react";
+import { Header, Card, TitleBar, Sidebar } from "./components";
+import SentencePractice from "./page/SentencePractice";
+import { SpeechProvider } from "./contexts/SpeechContext";
+
+// 在开发环境中导入测试工具
+if (process.env.NODE_ENV === "development") {
+  import("./utils/speechServiceTester");
+}
 
 function App() {
+  const [currentPage, setCurrentPage] = useState<"home" | "practice">("home");
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case "practice":
+        return <SentencePractice />;
+      case "home":
+      default:
+        return (
+          <div className="max-w-3xl mx-auto space-y-6">
+            {/* 页面标题 */}
+            <Header title="哑巴英语" subtitle="悄悄努力然后惊艳所有人！" />
+
+            {/* 功能卡片 */}
+            <div className="grid md:grid-cols-1 gap-6">
+              <Card
+                title="英语句子练习"
+                className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200"
+                onClick={() => setCurrentPage("practice")}
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📝</div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    中英文翻译练习
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    根据中文短语拼写英文句子，提升英语水平
+                  </p>
+                  <div className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    开始练习 →
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* 版权信息 */}
+            <div className="text-center text-sm text-gray-500 pt-4">
+              <p>Built with ❤️ using Electron Forge + React + Tailwind CSS</p>{" "}
+              <p className="mt-1">
+                MIT License - Feel free to use this template for your projects!
+              </p>{" "}
+            </div>
+          </div>
+        );
+    }
+  };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* 页面标题 */}
-        <Header 
-          title="Electron + React + Tailwind" 
-          subtitle="🎉 现代化的桌面应用开发模板"
-        />
-        
-        {/* 计数器组件 */}
-        <Counter />
-        
-        {/* 技术栈介绍 */}
-        <Card title="🛠️ 技术栈">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-gray-800">前端技术</h3>
-              <ul className="space-y-1 text-sm">
-                <li>⚛️ React 18 - 现代化 UI 库</li>
-                <li>🎨 Tailwind CSS 4 - 实用优先的 CSS 框架</li>
-                <li>📘 TypeScript - 类型安全</li>
-                <li>⚡ Vite - 快速构建工具</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold text-gray-800">桌面应用技术</h3>
-              <ul className="space-y-1 text-sm">
-                <li>🖥️ Electron - 跨平台桌面应用框架</li>
-                <li>🔨 Electron Forge - 完整的工具链</li>
-                <li>🔒 安全的预加载脚本</li>
-                <li>📦 多平台打包支持</li>
-              </ul>
+    <SpeechProvider>
+      <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col overflow-hidden">
+        {/* 自定义顶部工具栏 - 固定在顶部 */}
+        <TitleBar title="Whisper Language" />
+
+        {/* 主体内容区域 */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* 侧边栏 */}
+          <Sidebar
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />{" "}          {/* 主要内容区域 - 可滚动区域 */}
+          <div className="flex-1 overflow-y-auto">
+            <div className={currentPage === "practice" ? "h-full" : "p-6"}>
+              {renderPage()}
             </div>
           </div>
-        </Card>
-        
-        {/* 特性介绍 */}
-        <Card title="✨ 主要特性">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl mb-2">🚀</div>
-              <h4 className="font-semibold mb-1">快速开发</h4>
-              <p className="text-sm">热重载、TypeScript 支持，开发体验极佳</p>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl mb-2">🎨</div>
-              <h4 className="font-semibold mb-1">现代化 UI</h4>
-              <p className="text-sm">Tailwind CSS 提供美观的界面设计</p>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl mb-2">📦</div>
-              <h4 className="font-semibold mb-1">跨平台</h4>
-              <p className="text-sm">一次开发，支持 Windows、macOS、Linux</p>
-            </div>
-          </div>
-        </Card>
-        
-        {/* 快速开始 */}
-        <Card title="🎯 快速开始">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">开发命令</h4>
-              <div className="bg-gray-100 rounded p-3 font-mono text-sm space-y-1">
-                <div><span className="text-blue-600">npm run dev</span> - 启动开发服务器</div>
-                <div><span className="text-blue-600">npm run build</span> - 构建应用</div>
-                <div><span className="text-blue-600">npm run lint</span> - 代码检查</div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-2">项目结构</h4>
-              <div className="bg-gray-100 rounded p-3 font-mono text-xs">
-                <div>src/</div>
-                <div>├── components/     # React 组件</div>
-                <div>├── App.tsx        # 主应用组件</div>
-                <div>├── main.ts        # Electron 主进程</div>
-                <div>├── preload.ts     # 预加载脚本</div>
-                <div>└── renderer.tsx   # 渲染进程入口</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        {/* 版权信息 */}
-        <div className="text-center text-sm text-gray-500 pt-4">
-          <p>
-            Built with ❤️ using Electron Forge + React + Tailwind CSS
-          </p>
-          <p className="mt-1">
-            MIT License - Feel free to use this template for your projects!
-          </p>
         </div>
-        
       </div>
-    </div>
+    </SpeechProvider>
   );
 }
 
