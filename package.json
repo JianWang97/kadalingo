@@ -1,8 +1,8 @@
 {
-  "name": "electron-forge-react-vite",
-  "productName": "Electron Forge React Template",
+  "name": "kada-english",
+  "productName": "咔哒英语",
   "version": "1.0.0",
-  "description": "🚀 A modern Electron application template with React, TypeScript, Vite, and Tailwind CSS",
+  "description": "🚀 咔哒英语 - 一个用于语言学习的句子练习工具",
   "main": ".vite/build/main.js",
   "homepage": "https://github.com/JianWang6/electron-forge-react-vite",
   "repository": {
@@ -25,12 +25,14 @@
     "clean": "rimraf out .vite"
   },
   "keywords": [
+    "english",
+    "learning",
+    "sentence",
+    "practice",
+    "kada",
     "electron",
     "react",
-    "typescript",
-    "vite",
-    "tailwind",
-    "template"
+    "typescript"
   ],
   "author": {
     "name": "JianWang6",

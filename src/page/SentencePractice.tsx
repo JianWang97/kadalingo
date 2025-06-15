@@ -1,11 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { sentencePairs, SentencePair } from "../data/sentences";
+import { SentencePair, Course, Lesson } from "../data/types";
+import {
+  RepositoryFactory,
+  getStorageConfig,
+} from "../data/repositories/RepositoryFactory";
 import { useSpeech } from "../contexts/SpeechContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
-import { SpeechSettings } from "../components";
+import { Modal } from "../components/common";
 import { useFloatingMode } from "../hooks/useFloatingMode";
+import { Settings } from "../components/Settings";
 
-const SentencePractice: React.FC = () => {
+interface SentencePracticeProps {
+  selectedCourse?: Course | null;
+}
+
+const SentencePractice: React.FC<SentencePracticeProps> = ({
+  selectedCourse,
+}) => {
+  // 课程和课时相关状态
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  
+  // 数据仓储相关状态
+  const [sentences, setSentences] = useState<SentencePair[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // 使用语音服务
   const { speakEnglish, isPlaying, settings: speechSettings } = useSpeech();
   // 使用键盘声音服务
@@ -25,6 +47,92 @@ const SentencePractice: React.FC = () => {
   const [wordInputs, setWordInputs] = useState<string[]>([]);
   const [wordResults, setWordResults] = useState<(boolean | null)[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // 练习完成状态
+  const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
+  const [showCompletionButtons, setShowCompletionButtons] = useState(false);  // 数据仓储初始化 - 加载课程和课时信息
+  useEffect(() => {
+    const initializeCourse = async () => {
+      if (!selectedCourse) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const factory = RepositoryFactory.getInstance();
+        const config = getStorageConfig();
+        const repo = await factory.createRepository(config);
+        
+        // 获取该课程的所有课时
+        const lessons = await repo.getLessonsByCourse(selectedCourse.id);
+        setCurrentCourse(selectedCourse);
+        setAllLessons(lessons);
+        setCurrentLessonIndex(0);
+        
+        if (lessons.length > 0) {
+          setCurrentLesson(lessons[0]);
+          // 加载第一个课时的句子
+          await loadLessonSentences(selectedCourse.id, lessons[0].id);
+        } else {
+          setSentences([]);
+        }
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to initialize course:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to initialize course data"
+        );
+        setIsLoading(false);
+      }
+    };
+
+    initializeCourse();
+  }, [selectedCourse]); // 依赖selectedCourse，当课程改变时重新加载
+
+  // 加载指定课时的句子
+  const loadLessonSentences = async (courseId: number, lessonId: number) => {
+    try {
+      const factory = RepositoryFactory.getInstance();
+      const config = getStorageConfig();
+      const repo = await factory.createRepository(config);
+      const sentencesInLesson = await repo.getSentencesByLesson(courseId, lessonId);
+      setSentences(sentencesInLesson);
+      // 重置练习状态
+      setUsedSentences([]);
+      setCurrentSentence(null);
+      setIsAllSentencesCompleted(false);
+      setShowCompletionButtons(false);
+    } catch (err) {
+      console.error("Failed to load lesson sentences:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load lesson sentences"
+      );
+    }
+  };
+  // 切换到上一课时
+  const goToPreviousLesson = async () => {
+    if (allLessons.length === 0) return;
+    
+    if (currentLessonIndex > 0) {
+      const prevIndex = currentLessonIndex - 1;
+      const prevLesson = allLessons[prevIndex];
+      
+      setCurrentLessonIndex(prevIndex);
+      setCurrentLesson(prevLesson);
+      
+      if (selectedCourse) {
+        await loadLessonSentences(selectedCourse.id, prevLesson.id);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (sentences.length > 0 && !isLoading) {
+      loadNextSentence();
+    }
+  }, [sentences, isLoading]);
 
   // 解析句子，分离单词和标点符号
   const parseWordsAndPunctuation = (sentence: string) => {
@@ -47,9 +155,6 @@ const SentencePractice: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    loadNextSentence();
-  }, []);
   useEffect(() => {
     if (currentSentence) {
       const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
@@ -116,23 +221,28 @@ const SentencePractice: React.FC = () => {
       speakEnglish(currentSentence.english);
     }
   };
-
   const loadNextSentence = () => {
-    const availableSentences = sentencePairs.filter(
-      (sentence) => !usedSentences.includes(sentence.id)
+    if (sentences.length === 0) {
+      return; // 没有句子数据时不执行
+    }
+
+    const availableSentences = sentences.filter(
+      (sentence: SentencePair) => !usedSentences.includes(sentence.id)
     );
 
     let nextSentence: SentencePair;
     if (availableSentences.length === 0) {
-      // 所有句子都练习完了，重置
-      setUsedSentences([]);
-      nextSentence = sentencePairs[0];
-      setCurrentSentence(nextSentence);
+      // 所有句子都练习完了
+      setIsAllSentencesCompleted(true);
+      setShowCompletionButtons(true);
+      return; // 不加载新句子，显示完成界面
     } else {
       const randomIndex = Math.floor(Math.random() * availableSentences.length);
       nextSentence = availableSentences[randomIndex];
       setCurrentSentence(nextSentence);
       setUsedSentences((prev) => [...prev, nextSentence.id]);
+      setIsAllSentencesCompleted(false);
+      setShowCompletionButtons(false);
     }
     setFeedback("");
     setIsCorrect(null);
@@ -239,14 +349,52 @@ const SentencePractice: React.FC = () => {
       setWordResults(Array(correctWords.length).fill(true));
     }
   };
-
   const nextSentence = () => {
     loadNextSentence();
+  };
+
+  // 再来一遍 - 重置当前练习
+  const restartPractice = () => {
+    setUsedSentences([]);
+    setIsAllSentencesCompleted(false);
+    setShowCompletionButtons(false);
+    loadNextSentence();
+  };
+  // 切换到下一课时
+  const goToNextLesson = async () => {
+    if (allLessons.length === 0) {
+      // 如果没有课程数据，就使用原来的重新开始逻辑
+      restartPractice();
+      return;
+    }
+    
+    if (currentLessonIndex < allLessons.length - 1) {
+      const nextIndex = currentLessonIndex + 1;
+      const nextLesson = allLessons[nextIndex];
+      
+      setCurrentLessonIndex(nextIndex);
+      setCurrentLesson(nextLesson);
+      
+      if (selectedCourse) {
+        await loadLessonSentences(selectedCourse.id, nextLesson.id);
+      }
+    } else {
+      // 已经是最后一课时，可以考虑显示课程完成提示
+      console.log("已完成所有课时！");
+      // 或者循环回到第一课时
+      setCurrentLessonIndex(0);
+      setCurrentLesson(allLessons[0]);
+      if (selectedCourse) {
+        await loadLessonSentences(selectedCourse.id, allLessons[0].id);
+      }
+    }
   };
   const resetGame = () => {
     setScore(0);
     setAttempts(0);
     setUsedSentences([]);
+    setIsAllSentencesCompleted(false);
+    setShowCompletionButtons(false);
     loadNextSentence();
   };
 
@@ -284,11 +432,98 @@ const SentencePractice: React.FC = () => {
       document.removeEventListener("keydown", handleFloatingHotkey);
     };
   }, [isFloating]);
+  // 加载状态显示
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="text-gray-600">正在加载数据...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态显示
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <div className="text-red-600 mb-2">数据加载失败</div>
+          <div className="text-gray-500 text-sm">{error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            重试
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // 没有句子数据时显示
+  if (sentences.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-400 text-6xl mb-4">📝</div>
+          <div className="text-gray-600">
+            {selectedCourse
+              ? `课程"${selectedCourse.name}"暂无练习句子`
+              : "暂无练习句子"}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const accuracy = attempts > 0 ? Math.round((score / attempts) * 100) : 0;
+  // 练习完成显示
+  if (isAllSentencesCompleted && showCompletionButtons) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-sm mx-auto px-6">
+          <div className="text-5xl mb-6">🎉</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
+          <div className="text-gray-600 mb-6 space-y-1">
+            <p>完成 {sentences.length} 个句子</p>
+            <p className="text-lg font-medium text-blue-600">
+              {score}/{attempts} <span className="text-sm text-gray-500">({accuracy}%)</span>
+            </p>
+          </div>
+          
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={restartPractice}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              再练一遍
+            </button>
+            <button
+              onClick={goToNextLesson}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {allLessons.length > 1 && currentLessonIndex < allLessons.length - 1 
+                ? "下一节" 
+                : "继续练习"
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentSentence) {
-    return <div className="text-center">加载中...</div>;
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-pulse text-gray-600">准备练习...</div>
+        </div>
+      </div>
+    );
   }
-  const accuracy = attempts > 0 ? Math.round((score / attempts) * 100) : 0;
   return (
     <div
       className={`relative h-full flex flex-col ${
@@ -298,7 +533,83 @@ const SentencePractice: React.FC = () => {
       {/* 小窗模式下的拖动区域 */}
       {isFloating && (
         <div className="absolute inset-0 drag-region" style={{ zIndex: 0 }} />
+      )}{" "}      {/* 课程信息显示 */}
+      {selectedCourse && (
+        <div
+          className={`${isFloating ? "py-2 px-2" : "py-3 px-6"} ${
+            isFloating ? "drag-region" : ""
+          }`}
+        >
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-3">
+              {/* 上一节按钮 */}
+              {currentLesson && allLessons.length > 1 && (
+                <button
+                  onClick={goToPreviousLesson}
+                  disabled={currentLessonIndex === 0}
+                  className={`${
+                    isFloating ? "p-1" : "p-1.5"
+                  } rounded-md transition-colors ${
+                    currentLessonIndex === 0
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="上一节"
+                >
+                  <svg className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* 课程课时标题 */}
+              <div
+                className={`inline-flex items-center gap-2 ${
+                  isFloating ? "px-2 py-1" : "px-3 py-1.5"
+                } bg-gray-100 rounded-md`}
+              >
+                <span className={`text-gray-600 ${isFloating ? "text-xs" : "text-sm"}`}>
+                  {selectedCourse.name}
+                </span>
+                {currentLesson && (
+                  <>
+                    <span className="text-gray-400">·</span>
+                    <span className={`text-gray-500 ${isFloating ? "text-xs" : "text-sm"}`}>
+                      {currentLesson.title}
+                    </span>
+                    {allLessons.length > 1 && (
+                      <span className={`text-gray-400 ${isFloating ? "text-xs" : "text-xs"}`}>
+                        ({currentLessonIndex + 1}/{allLessons.length})
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              {/* 下一节按钮 */}
+              {currentLesson && allLessons.length > 1 && (
+                <button
+                  onClick={goToNextLesson}
+                  disabled={currentLessonIndex === allLessons.length - 1}
+                  className={`${
+                    isFloating ? "p-1" : "p-1.5"
+                  } rounded-md transition-colors ${
+                    currentLessonIndex === allLessons.length - 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="下一节"
+                >
+                  <svg className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
+      
       {/* 主要内容区域 */}
       <div className="flex-1 overflow-y-auto flex items-center relative z-10">
         {" "}
@@ -307,54 +618,13 @@ const SentencePractice: React.FC = () => {
             isFloating ? "drag-region" : ""
           }`}
         >
-          {/* 简约的统计信息 - 飘窗模式下隐藏 */}
-          {!isFloating && (
-            <div
-              className={`flex items-center justify-center gap-8 ${
-                isFloating ? "mb-4" : "mb-8"
-              }`}
-            >
-              <div className="text-center">
-                <div
-                  className={`${
-                    isFloating ? "text-base" : "text-lg"
-                  } font-semibold text-gray-900`}
-                >
-                  {score}/{attempts}
-                </div>
-                <div
-                  className={`${
-                    isFloating ? "text-xs" : "text-sm"
-                  } text-gray-500`}
-                >
-                  得分
-                </div>
-              </div>
-              <div className="text-center">
-                <div
-                  className={`${
-                    isFloating ? "text-base" : "text-lg"
-                  } font-semibold text-blue-600`}
-                >
-                  {accuracy}%
-                </div>
-                <div
-                  className={`${
-                    isFloating ? "text-xs" : "text-sm"
-                  } text-gray-500`}
-                >
-                  准确率
-                </div>
-              </div>
-            </div>
-          )}            
+          {" "}
           {/* 主要练习区域 */}
           <div
             className={`mx-auto w-full ${
               isFloating ? "max-w-full drag-region" : "max-w-full"
             }`}
           >
-            {" "}
             {/* 中文句子 */}
             <div
               className={`text-center ${isFloating ? "mb-4" : "mb-8"} ${
@@ -487,57 +757,55 @@ const SentencePractice: React.FC = () => {
                   {feedback}
                 </p>
               </div>
-            )}
-          </div>
-          {/* 设置浮窗 */}
-          {isDrawerOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-drag">
-              <div className="w-96 bg-white rounded-lg shadow-lg max-h-[80vh] overflow-hidden no-drag">
-                <div className="p-6 h-full overflow-y-auto">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-medium text-gray-900">
-                      语音设置
-                    </h2>{" "}
-                    <button
-                      onClick={() => setIsDrawerOpen(false)}
-                      className="p-1 text-gray-400 hover:text-gray-600 rounded no-drag"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <SpeechSettings />
-                </div>
-              </div>
-            </div>
-          )}{" "}
+            )}{" "}
+          </div>{" "}
+          {/* 设置模态框 */}
+          <Modal
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            title="设置"
+            maxWidth="max-w-lg"
+          >
+            <Settings />
+          </Modal>{" "}
         </div>
-      </div>{" "}
-      {/* 进度条区域 - 小飘窗模式下隐藏 */}
+      </div>{" "}      {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
-          <div className="text-center">
-            <div className="text-sm text-gray-400 mb-2">
-              {usedSentences.length} / {sentencePairs.length}
+          <div className="flex items-center justify-between max-w-2xl mx-auto">
+            {/* 左侧：得分 */}
+            <div className="text-center">
+              <div className="text-sm font-semibold text-gray-900">
+                {score}/{attempts}
+              </div>
+              <div className="text-xs text-gray-500">得分</div>
             </div>
-            <div className="w-full max-w-2xl h-2 bg-gray-200 rounded-full mx-auto">
-              <div
-                className="h-2 bg-gray-400 rounded-full transition-all duration-300"
-                style={{
-                  width: `${
-                    (usedSentences.length / sentencePairs.length) * 100
-                  }%`,
-                }}
-              />
+            
+            {/* 中间：进度条 */}
+            <div className="flex-1 mx-6 text-center">
+              <div className="text-sm text-gray-400 mb-2">
+                {usedSentences.length} / {sentences.length}
+              </div>
+              <div className="w-full h-2 bg-gray-200 rounded-full">
+                <div
+                  className="h-2 bg-gray-400 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${
+                      sentences.length > 0
+                        ? (usedSentences.length / sentences.length) * 100
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 右侧：准确率 */}
+            <div className="text-center">
+              <div className="text-sm font-semibold text-blue-600">
+                {accuracy}%
+              </div>
+              <div className="text-xs text-gray-500">准确率</div>
             </div>
           </div>
         </div>
@@ -619,12 +887,11 @@ const SentencePractice: React.FC = () => {
             </div>
           </div>{" "}
           {/* 右侧的语音设置按钮和窗口化 */}
-          <div className="flex items-center gap-4">
-            {" "}
-            <SpeechSettings
+          <div className="flex items-center gap-3">
+            <Settings
               compact={true}
               onOpenSettings={() => setIsDrawerOpen(true)}
-              className="border border-gray-200 no-drag"
+              className="bg-white hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg no-drag"
             />
           </div>
         </div>

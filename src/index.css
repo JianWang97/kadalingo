@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+
+/* WebKit 滚动条 - 现代简约风格 */
+*::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  background-color: transparent !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important; /* 极淡的灰色背景 */
+  border-radius: 4px !important;
+  margin: 2px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%) !important; /* 紫色系渐变 */
+  border-radius: 4px !important;
+  min-height: 30px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15) !important; /* 紫色阴影 */
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7c3aed 0%, #9333ea 50%, #c026d3 100%) !important; /* 更深的紫色 */
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25) !important;
+  transform: scale(1.02) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* 彻底移除箭头按钮 - 使用所有可能的方法 */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+
+
 /* 自定义样式 - 会与 Tailwind 的样式合并 */
 html, body, #root {
   height: 100%;
@@ -34,43 +75,6 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-}
-
-/* 全局滚动条样式 */
-/* 适用于 WebKit 浏览器 (Chrome, Safari, Edge) */
-* {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #cbd5e0 #f7fafc; /* Firefox */
-}
-
-/* WebKit 滚动条样式 */
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: #f7fafc;
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: #a0aec0;
-}
-
-/* 隐藏滚动条的上下三角形按钮 */
-*::-webkit-scrollbar-button {
-  display: none;
-}
-
-/* 隐藏滚动条角落 */
-*::-webkit-scrollbar-corner {
-  background: transparent;
 }
 
 /* 浮窗模式样式 */

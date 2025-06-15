@@ -4,9 +4,8 @@ interface TitleBarProps {
   title?: string;
 }
 
-const TitleBar: React.FC<TitleBarProps> = ({ title = "Electron App" }) => {
+const TitleBar: React.FC<TitleBarProps> = ({ title = "咔哒英语" }) => {
   const [isFloating, setIsFloating] = useState(false);
-
   useEffect(() => {
     // 检查当前是否为小飘窗模式
     const checkFloatingMode = async () => {

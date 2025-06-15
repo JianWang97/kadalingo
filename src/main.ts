@@ -100,6 +100,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    title: '咔哒英语', // 设置窗口标题
     frame: false, // 隐藏窗口边框和工具栏
     transparent: true, // 启用透明背景支持
     backgroundColor: '#00000000', // 设置完全透明的背景色
@@ -109,6 +110,7 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false, // 禁用沙盒模式以允许访问 IndexedDB
     },
   });
 

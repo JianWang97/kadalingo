@@ -1,5 +1,7 @@
 # GitHub Copilot 指令
 
+这个一个MVP项目，所以第一版 代码需要尽可能简洁和高效。以便更好的维护和扩展。
+
 ## 项目概述
 这是一个使用 Electron Forge、TypeScript 和 Tailwind CSS 构建的 Electron React 应用程序。该应用程序是一个用于语言学习的句子练习工具。
 
