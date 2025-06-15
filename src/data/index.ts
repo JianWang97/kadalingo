@@ -13,5 +13,3 @@ export * from './repositories/RepositoryFactory';
 // 示例数据
 export * from './sampleData';
 
-// 工具函数
-export * from './utils';
