@@ -9,6 +9,7 @@ import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { Modal } from "../components/common";
 import { useFloatingMode } from "../hooks/useFloatingMode";
 import { Settings } from "../components/Settings";
+import { ProgressService } from "../services/progressService";
 
 interface SentencePracticeProps {
   selectedCourse?: Course | null;
@@ -22,7 +23,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-  
+
   // 数据仓储相关状态
   const [sentences, setSentences] = useState<SentencePair[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +50,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
-  const [showCompletionButtons, setShowCompletionButtons] = useState(false);  // 数据仓储初始化 - 加载课程和课时信息
+  const [showCompletionButtons, setShowCompletionButtons] = useState(false); // 数据仓储初始化 - 加载课程和课时信息
   useEffect(() => {
     const initializeCourse = async () => {
       if (!selectedCourse) {
@@ -62,27 +63,51 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         setError(null);
         const factory = RepositoryFactory.getInstance();
         const config = getStorageConfig();
-        const repo = await factory.createRepository(config);
-        
-        // 获取该课程的所有课时
+        const repo = await factory.createRepository(config); // 获取该课程的所有课时
         const lessons = await repo.getLessonsByCourse(selectedCourse.id);
         setCurrentCourse(selectedCourse);
         setAllLessons(lessons);
-        setCurrentLessonIndex(0);
-        
+
         if (lessons.length > 0) {
-          setCurrentLesson(lessons[0]);
-          // 加载第一个课时的句子
-          await loadLessonSentences(selectedCourse.id, lessons[0].id);
+          // 查找当前应该学习的课时（基于进度）
+          const progressService = ProgressService.getInstance();
+          let resumeLessonIndex = 0;
+
+          // 遍历课时，找到第一个未完成的课时
+          for (let i = 0; i < lessons.length; i++) {
+            const isCompleted = await progressService.isLessonCompleted(
+              selectedCourse.id,
+              lessons[i].id
+            );
+            if (!isCompleted) {
+              resumeLessonIndex = i;
+              break;
+            }
+            // 如果所有课时都完成了，则从最后一个课时开始
+            if (i === lessons.length - 1) {
+              resumeLessonIndex = i;
+            }
+          }
+
+          setCurrentLessonIndex(resumeLessonIndex);
+          setCurrentLesson(lessons[resumeLessonIndex]);
+
+          // 加载对应课时的句子
+          await loadLessonSentences(
+            selectedCourse.id,
+            lessons[resumeLessonIndex].id
+          );
         } else {
           setSentences([]);
         }
-        
+
         setIsLoading(false);
       } catch (err) {
         console.error("Failed to initialize course:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to initialize course data"
+          err instanceof Error
+            ? err.message
+            : "Failed to initialize course data"
         );
         setIsLoading(false);
       }
@@ -90,17 +115,36 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
     initializeCourse();
   }, [selectedCourse]); // 依赖selectedCourse，当课程改变时重新加载
-
   // 加载指定课时的句子
   const loadLessonSentences = async (courseId: number, lessonId: number) => {
     try {
       const factory = RepositoryFactory.getInstance();
       const config = getStorageConfig();
       const repo = await factory.createRepository(config);
-      const sentencesInLesson = await repo.getSentencesByLesson(courseId, lessonId);
+      const sentencesInLesson = await repo.getSentencesByLesson(
+        courseId,
+        lessonId
+      );
+
+      // 按句子ID排序，确保每次加载的顺序都一致
+      sentencesInLesson.sort((a, b) => a.id - b.id);
       setSentences(sentencesInLesson);
-      // 重置练习状态
-      setUsedSentences([]);
+
+      // 获取课时进度，恢复已完成的句子状态
+      const progressService = ProgressService.getInstance();
+      const progress = await progressService.getLessonProgress(
+        courseId,
+        lessonId
+      );
+
+      if (progress && progress.completedSentences.length > 0) {
+        // 如果有进度，设置已使用的句子
+        setUsedSentences(progress.completedSentences);
+      } else {
+        // 重置练习状态
+        setUsedSentences([]);
+      }
+
       setCurrentSentence(null);
       setIsAllSentencesCompleted(false);
       setShowCompletionButtons(false);
@@ -114,14 +158,14 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   // 切换到上一课时
   const goToPreviousLesson = async () => {
     if (allLessons.length === 0) return;
-    
+
     if (currentLessonIndex > 0) {
       const prevIndex = currentLessonIndex - 1;
       const prevLesson = allLessons[prevIndex];
-      
+
       setCurrentLessonIndex(prevIndex);
       setCurrentLesson(prevLesson);
-      
+
       if (selectedCourse) {
         await loadLessonSentences(selectedCourse.id, prevLesson.id);
       }
@@ -175,7 +219,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   }, [currentSentence]);
   // 全局键盘监听  // 全局键盘监听
   useEffect(() => {
-    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+    const handleGlobalKeyPress = async (e: KeyboardEvent) => {
       // Enter键 - 下一句
       if (e.key === "Enter" && (isCorrect === true || showAnswer)) {
         e.preventDefault();
@@ -192,14 +236,12 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       if (e.ctrlKey && e.key === "m" && isCorrect !== true && !showAnswer) {
         e.preventDefault();
         if (!wordInputs.some((input) => !input.trim())) {
-          checkAnswer();
+          await checkAnswer();
         }
-      }
-
-      // Ctrl + N - 显示答案
+      }      // Ctrl + N - 显示答案
       if (e.ctrlKey && e.key === "n" && isCorrect !== true && !showAnswer) {
         e.preventDefault();
-        showCorrectAnswer();
+        showCorrectAnswer().catch(console.error);
       }
 
       // Ctrl + R - 重置练习
@@ -225,7 +267,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     if (sentences.length === 0) {
       return; // 没有句子数据时不执行
     }
-
     const availableSentences = sentences.filter(
       (sentence: SentencePair) => !usedSentences.includes(sentence.id)
     );
@@ -237,8 +278,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       setShowCompletionButtons(true);
       return; // 不加载新句子，显示完成界面
     } else {
-      const randomIndex = Math.floor(Math.random() * availableSentences.length);
-      nextSentence = availableSentences[randomIndex];
+      // 按照句子ID顺序选择下一个句子，确保学习进度的一致性
+      availableSentences.sort((a, b) => a.id - b.id);
+      nextSentence = availableSentences[0]; // 总是选择ID最小的未完成句子
       setCurrentSentence(nextSentence);
       setUsedSentences((prev) => [...prev, nextSentence.id]);
       setIsAllSentencesCompleted(false);
@@ -276,7 +318,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       return newInputs;
     });
   };
-  const handleKeyPress = (
+  const handleKeyPress = async (
     e: React.KeyboardEvent<HTMLInputElement>,
     idx: number
   ) => {
@@ -289,7 +331,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       playKeySound("enter");
       // 只在未完成时检查答案，完成后由全局监听处理
       if (isCorrect !== true && !showAnswer) {
-        checkAnswer();
+        await checkAnswer();
       }
     }
   };
@@ -318,7 +360,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
     }
   };
-  const checkAnswer = () => {
+  const checkAnswer = async () => {
     if (!currentSentence) return;
     const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
     let allCorrect = true;
@@ -330,16 +372,41 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     });
     setWordResults(results);
     setAttempts((prev) => prev + 1);
+
     if (allCorrect) {
       setIsCorrect(true);
       setFeedback("全部单词正确！🎉");
       setScore((prev) => prev + 1);
+
+      // 保存学习进度
+      if (currentCourse && currentLesson) {
+        const progressService = ProgressService.getInstance();
+        await progressService.markSentenceCompleted(
+          currentCourse.id,
+          currentLesson.id,
+          currentSentence.id,
+          true,
+          sentences.length
+        );
+      }
     } else {
       setIsCorrect(false);
       setFeedback("有单词不正确，请检查红色单词");
+
+      // 记录错误尝试
+      if (currentCourse && currentLesson) {
+        const progressService = ProgressService.getInstance();
+        await progressService.markSentenceCompleted(
+          currentCourse.id,
+          currentLesson.id,
+          currentSentence.id,
+          false,
+          sentences.length
+        );
+      }
     }
   };
-  const showCorrectAnswer = () => {
+  const showCorrectAnswer = async () => {
     setShowAnswer(true);
     setFeedback(`正确答案：${currentSentence?.english}`);
     if (currentSentence) {
@@ -347,6 +414,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       const correctWords = parsedTokens.map((token) => token.word);
       setWordInputs(correctWords);
       setWordResults(Array(correctWords.length).fill(true));
+
+      // 当显示答案时，也记录为完成状态（但标记为不正确）
+      if (currentCourse && currentLesson) {
+        const progressService = ProgressService.getInstance();
+        await progressService.markSentenceCompleted(
+          currentCourse.id,
+          currentLesson.id,
+          currentSentence.id,
+          false, // 标记为不正确，因为是通过显示答案完成的
+          sentences.length
+        );
+      }
     }
   };
   const nextSentence = () => {
@@ -367,14 +446,14 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       restartPractice();
       return;
     }
-    
+
     if (currentLessonIndex < allLessons.length - 1) {
       const nextIndex = currentLessonIndex + 1;
       const nextLesson = allLessons[nextIndex];
-      
+
       setCurrentLessonIndex(nextIndex);
       setCurrentLesson(nextLesson);
-      
+
       if (selectedCourse) {
         await loadLessonSentences(selectedCourse.id, nextLesson.id);
       }
@@ -489,10 +568,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
             <p className="text-lg font-medium text-blue-600">
-              {score}/{attempts} <span className="text-sm text-gray-500">({accuracy}%)</span>
+              {score}/{attempts}{" "}
+              <span className="text-sm text-gray-500">({accuracy}%)</span>
             </p>
           </div>
-          
+
           <div className="flex gap-3 justify-center">
             <button
               onClick={restartPractice}
@@ -504,10 +584,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               onClick={goToNextLesson}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {allLessons.length > 1 && currentLessonIndex < allLessons.length - 1 
-                ? "下一节" 
-                : "继续练习"
-              }
+              {allLessons.length > 1 &&
+              currentLessonIndex < allLessons.length - 1
+                ? "下一节"
+                : "继续练习"}
             </button>
           </div>
         </div>
@@ -533,7 +613,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       {/* 小窗模式下的拖动区域 */}
       {isFloating && (
         <div className="absolute inset-0 drag-region" style={{ zIndex: 0 }} />
-      )}{" "}      {/* 课程信息显示 */}
+      )}{" "}
+      {/* 课程信息显示 */}
       {selectedCourse && (
         <div
           className={`${isFloating ? "py-2 px-2" : "py-3 px-6"} ${
@@ -556,36 +637,56 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   }`}
                   title="上一节"
                 >
-                  <svg className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`} fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               )}
-              
+
               {/* 课程课时标题 */}
               <div
                 className={`inline-flex items-center gap-2 ${
                   isFloating ? "px-2 py-1" : "px-3 py-1.5"
                 } bg-gray-100 rounded-md`}
               >
-                <span className={`text-gray-600 ${isFloating ? "text-xs" : "text-sm"}`}>
+                <span
+                  className={`text-gray-600 ${
+                    isFloating ? "text-xs" : "text-sm"
+                  }`}
+                >
                   {selectedCourse.name}
                 </span>
                 {currentLesson && (
                   <>
                     <span className="text-gray-400">·</span>
-                    <span className={`text-gray-500 ${isFloating ? "text-xs" : "text-sm"}`}>
+                    <span
+                      className={`text-gray-500 ${
+                        isFloating ? "text-xs" : "text-sm"
+                      }`}
+                    >
                       {currentLesson.title}
                     </span>
                     {allLessons.length > 1 && (
-                      <span className={`text-gray-400 ${isFloating ? "text-xs" : "text-xs"}`}>
+                      <span
+                        className={`text-gray-400 ${
+                          isFloating ? "text-xs" : "text-xs"
+                        }`}
+                      >
                         ({currentLessonIndex + 1}/{allLessons.length})
                       </span>
                     )}
                   </>
                 )}
               </div>
-              
+
               {/* 下一节按钮 */}
               {currentLesson && allLessons.length > 1 && (
                 <button
@@ -600,8 +701,16 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   }`}
                   title="下一节"
                 >
-                  <svg className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`} fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  <svg
+                    className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               )}
@@ -609,7 +718,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           </div>
         </div>
       )}
-      
       {/* 主要内容区域 */}
       <div className="flex-1 overflow-y-auto flex items-center relative z-10">
         {" "}
@@ -769,7 +877,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             <Settings />
           </Modal>{" "}
         </div>
-      </div>{" "}      {/* 进度条区域 - 小飘窗模式下隐藏 */}
+      </div>{" "}
+      {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
           <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -780,7 +889,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               </div>
               <div className="text-xs text-gray-500">得分</div>
             </div>
-            
+
             {/* 中间：进度条 */}
             <div className="flex-1 mx-6 text-center">
               <div className="text-sm text-gray-400 mb-2">
@@ -842,7 +951,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 <>
                   {" "}
                   <button
-                    onClick={checkAnswer}
+                    onClick={() => checkAnswer()}
                     disabled={wordInputs.some((input) => !input.trim())}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
                   >
@@ -850,9 +959,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
                       Enter
                     </span>
-                  </button>{" "}
-                  <button
-                    onClick={showCorrectAnswer}
+                  </button>{" "}                  <button
+                    onClick={() => showCorrectAnswer().catch(console.error)}
                     className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                   >
                     <span>显示答案</span>
