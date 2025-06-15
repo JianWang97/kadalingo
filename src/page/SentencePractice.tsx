@@ -217,7 +217,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     }
     // eslint-disable-next-line
   }, [currentSentence]);
-  // 全局键盘监听  // 全局键盘监听
+  // 全局键盘监听
   useEffect(() => {
     const handleGlobalKeyPress = async (e: KeyboardEvent) => {
       // Enter键 - 下一句

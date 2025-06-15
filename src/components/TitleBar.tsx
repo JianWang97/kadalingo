@@ -1,23 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useFloatingMode } from '../hooks/useFloatingMode';
 
 interface TitleBarProps {
   title?: string;
 }
 
 const TitleBar: React.FC<TitleBarProps> = ({ title = "咔哒英语" }) => {
-  const [isFloating, setIsFloating] = useState(false);
-  useEffect(() => {
-    // 检查当前是否为小飘窗模式
-    const checkFloatingMode = async () => {
-      if (window.electronAPI?.isFloatingMode) {
-        const floating = await window.electronAPI.isFloatingMode();
-        setIsFloating(floating);
-      }
-    };
-    checkFloatingMode();
-    const intervalId = setInterval(checkFloatingMode, 500);
-    return () => clearInterval(intervalId);
-  }, []);
+  const isFloating = useFloatingMode();
 
   // 小窗模式下隐藏标题栏
   if (isFloating) return null;

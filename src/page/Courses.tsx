@@ -96,6 +96,10 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
   const [dbCourses, setDbCourses] = useState<Course[]>([]); // 存储原始数据库课程数据
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set()); // 展开的课程ID
   const [loadingLessons, setLoadingLessons] = useState<Set<string>>(new Set()); // 正在加载课时的课程ID
+  // 重新学习确认对话框状态
+  const [restartConfirmCourse, setRestartConfirmCourse] = useState<CourseDisplay | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
   useEffect(() => {
     const loadCourses = async () => {      try {
         setLoading(true);
@@ -193,7 +197,63 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       }
     }
   };
+  // 重置课程学习进度并开始学习
+  const handleResetCourseProgress = async (course: CourseDisplay) => {
+    try {
+      setIsResetting(true);
+      const progressService = ProgressService.getInstance();
+      await progressService.resetCourseProgress(parseInt(course.id));
+      
+      // 重新加载课程数据以更新UI
+      await reloadCourseData();
+      
+      // 找到对应的原始课程数据并直接开始学习
+      const originalCourse = dbCourses.find(
+        (dbCourse) => dbCourse.id.toString() === course.id
+      );
+      if (originalCourse) {
+        onStartCourse(originalCourse);
+      }
+      
+      setRestartConfirmCourse(null);
+    } catch (error) {
+      console.error("重置课程进度失败:", error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
+  // 直接开始学习课程（不弹框）
+  const handleDirectStartLearning = (course: CourseDisplay) => {
+    // 找到对应的原始课程数据
+    const originalCourse = dbCourses.find(
+      (dbCourse) => dbCourse.id.toString() === course.id
+    );
+    if (originalCourse) {
+      onStartCourse(originalCourse);
+    }
+  };
+
+  // 重新加载课程数据
+  const reloadCourseData = async () => {
+    try {
+      const factory = RepositoryFactory.getInstance();
+      const config = getStorageConfig();
+      const repository = await factory.createRepository(config);
+      const courseData = await repository.getAllCourses();
+      setDbCourses(courseData);
+      
+      // 并行转换所有课程，包含进度信息
+      const displayCoursesPromises = courseData.map(convertCourseToDisplay);
+      const displayCourses = await Promise.all(displayCoursesPromises);
+      setCourses(displayCourses);
+      
+      // 清空展开状态，因为课时详情需要重新加载
+      setExpandedCourses(new Set());
+    } catch (error) {
+      console.error("重新加载课程数据失败:", error);
+    }
+  };
   const handleStartLearning = () => {
     if (selectedCourse) {
       // 找到对应的原始课程数据
@@ -205,6 +265,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       }
     }
   };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -294,12 +355,17 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                         d="M19 9l-7 7-7-7"
                       />
                     </svg>
-                  </button>
-                  <button
+                  </button>                  <button
                     className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedCourse(course);
+                      if (course.completed) {
+                        // 如果课程已完成，弹出重新学习确认对话框
+                        setRestartConfirmCourse(course);
+                      } else {
+                        // 否则直接开始学习（继续或开始），不弹框
+                        handleDirectStartLearning(course);
+                      }
                     }}
                   >
                     {course.completed ? '重新学习' : course.progress > 0 ? '继续' : '开始'}
@@ -421,6 +487,74 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 {selectedCourse.completed ? '重新学习' : selectedCourse.progress > 0 ? '继续学习' : '开始学习'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 重新学习确认对话框 */}
+      <Modal
+        isOpen={!!restartConfirmCourse}
+        onClose={() => setRestartConfirmCourse(null)}
+        title=""
+        maxWidth="max-w-sm"
+      >
+        {restartConfirmCourse && (
+          <div className="text-center py-2">
+            <div className="text-yellow-500 text-4xl mb-3">⚠️</div>
+            <h3 className="text-lg font-semibold mb-2">重新学习确认</h3>
+            <p className="text-gray-600 mb-4">
+              重新学习将清空「{restartConfirmCourse.title}」的所有学习记录和进度，确定要继续吗？
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRestartConfirmCourse(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isResetting}
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleResetCourseProgress(restartConfirmCourse)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isResetting}
+              >
+                {isResetting ? '重置中...' : '确定重新学习'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>      {/* 重新学习确认对话框 */}
+      <Modal
+        isOpen={!!restartConfirmCourse}
+        onClose={() => setRestartConfirmCourse(null)}
+        title=""
+        maxWidth="max-w-sm"
+      >
+        {restartConfirmCourse && (
+          <div className="text-center py-2">
+            <div className="text-yellow-500 text-4xl mb-3">⚠️</div>
+            <h3 className="text-lg font-semibold mb-2">重新学习确认</h3>
+            <p className="text-gray-600 mb-4">
+              重新学习将清空「{restartConfirmCourse.title}」的所有学习记录和进度，确定要继续吗？
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRestartConfirmCourse(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isResetting}
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleResetCourseProgress(restartConfirmCourse)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isResetting}
+              >
+                {isResetting ? '重置中...' : '重新学习'}
               </button>
             </div>
           </div>
