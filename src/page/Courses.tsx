@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Modal } from "../components/common";
 import { Course } from "../data/types";
 import {
@@ -31,26 +31,9 @@ interface CourseDisplay {
   lessons?: LessonDetail[]; // 课时详情
 }
 
-// 将数据库课程转换为显示课程
-const convertCourseToDisplay = async (course: Course): Promise<CourseDisplay> => {
-  const progressService = ProgressService.getInstance();
-  const completionRate = await progressService.getCourseCompletionRate(course.id);
-  
-  return {
-    id: course.id.toString(),
-    title: course.name,
-    description: course.description || "",
-    icon: getIconForCategory(course.category),
-    level: course.difficulty,
-    lessonCount: course.totalLessons,
-    completed: completionRate >= 1.0,
-    progress: Math.round(completionRate * 100)
-  };
-};
-
 // 根据课程分类获取图标
 const getIconForCategory = (category: string): string => {
-  const iconMap: { [key: string]: string } = {
+  const iconMap: Record<string, string> = {
     日常对话: "💬",
     商务英语: "💼",
     旅游英语: "✈️",
@@ -61,31 +44,50 @@ const getIconForCategory = (category: string): string => {
   return iconMap[category] || "📚";
 };
 
+// 将数据库课程转换为显示课程
+const convertCourseToDisplay = async (
+  course: Course
+): Promise<CourseDisplay> => {
+  const progressService = ProgressService.getInstance();
+  const completionRate = await progressService.getCourseCompletionRate(
+    course.id
+  );
+
+  return {
+    id: course.id.toString(),
+    title: course.name,
+    description: course.description || "",
+    icon: getIconForCategory(course.category),
+    level: course.difficulty,
+    lessonCount: course.totalLessons,
+    completed: completionRate >= 1.0,
+    progress: Math.round(completionRate * 100),
+  };
+};
+
+// 获取难度级别的样式
+const getLevelColor = (level: CourseDisplay["level"]) => {
+  const levelColors: Record<CourseDisplay["level"], string> = {
+    beginner: "bg-green-100 text-green-800 border-green-200",
+    intermediate: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    advanced: "bg-red-100 text-red-800 border-red-200",
+  };
+  return levelColors[level];
+};
+
+// 获取难度级别的文本
+const getLevelText = (level: CourseDisplay["level"]) => {
+  const levelTexts: Record<CourseDisplay["level"], string> = {
+    beginner: "初级",
+    intermediate: "中级",
+    advanced: "高级",
+  };
+  return levelTexts[level];
+};
+
 interface CoursesProps {
   onStartCourse: (course: Course) => void;
 }
-
-const getLevelColor = (level: CourseDisplay["level"]) => {
-  switch (level) {
-    case "beginner":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "intermediate":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "advanced":
-      return "bg-red-100 text-red-800 border-red-200";
-  }
-};
-
-const getLevelText = (level: CourseDisplay["level"]) => {
-  switch (level) {
-    case "beginner":
-      return "初级";
-    case "intermediate":
-      return "中级";
-    case "advanced":
-      return "高级";
-  }
-};
 
 const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
   const [courses, setCourses] = useState<CourseDisplay[]>([]);
@@ -93,62 +95,75 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     null
   );
   const [loading, setLoading] = useState(true);
-  const [dbCourses, setDbCourses] = useState<Course[]>([]); // 存储原始数据库课程数据
-  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set()); // 展开的课程ID
-  const [loadingLessons, setLoadingLessons] = useState<Set<string>>(new Set()); // 正在加载课时的课程ID
-  // 重新学习确认对话框状态
-  const [restartConfirmCourse, setRestartConfirmCourse] = useState<CourseDisplay | null>(null);
+  const [dbCourses, setDbCourses] = useState<Course[]>([]);
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(
+    new Set()
+  );
+  const [loadingLessons, setLoadingLessons] = useState<Set<string>>(new Set());
+  const [restartConfirmCourse, setRestartConfirmCourse] =
+    useState<CourseDisplay | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
-  useEffect(() => {
-    const loadCourses = async () => {      try {
-        setLoading(true);
-        const factory = RepositoryFactory.getInstance();
-        const config = getStorageConfig();
-        const repository = await factory.createRepository(config);
-        const courseData = await repository.getAllCourses();
-        setDbCourses(courseData);
-        
-        // 并行转换所有课程，包含进度信息
-        const displayCoursesPromises = courseData.map(convertCourseToDisplay);
-        const displayCourses = await Promise.all(displayCoursesPromises);
-        setCourses(displayCourses);
-      } catch (error) {
-        console.error("加载课程失败:", error);
-      } finally {
-        setLoading(false);
-      }
-    };    loadCourses();
+  // 加载所有课程数据
+  const loadCourses = useCallback(async () => {
+    try {
+      setLoading(true);
+      const factory = RepositoryFactory.getInstance();
+      const config = getStorageConfig();
+      const repository = await factory.createRepository(config);
+      const courseData = await repository.getAllCourses();
+      setDbCourses(courseData);
+
+      // 并行转换所有课程，包含进度信息
+      const displayCoursesPromises = courseData.map(convertCourseToDisplay);
+      const displayCourses = await Promise.all(displayCoursesPromises);
+      setCourses(displayCourses);
+    } catch (error) {
+      console.error("加载课程失败:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
   // 加载课时详情
-  const loadLessonDetails = async (courseId: string) => {
+  const loadLessonDetails = useCallback(async (courseId: string) => {
     try {
-      setLoadingLessons(prev => new Set([...prev, courseId]));
-      
+      setLoadingLessons((prev) => new Set([...prev, courseId]));
+
       const factory = RepositoryFactory.getInstance();
       const config = getStorageConfig();
       const repository = await factory.createRepository(config);
       const progressService = ProgressService.getInstance();
-      
+
       // 获取课程的所有课时
       const lessons = await repository.getLessonsByCourse(parseInt(courseId));
-        // 为每个课时获取进度信息
+
+      // 为每个课时获取进度信息
       const lessonDetails: LessonDetail[] = await Promise.all(
         lessons.map(async (lesson, index) => {
-          const progress = await progressService.getLessonProgress(parseInt(courseId), lesson.id);
+          const progress = await progressService.getLessonProgress(
+            parseInt(courseId),
+            lesson.id
+          );
           const totalSentences = lesson.sentences?.length || 0;
           const completedSentences = progress?.completedSentences?.length || 0;
-          const progressPercent = totalSentences > 0 ? Math.round((completedSentences / totalSentences) * 100) : 0;
-          
+          const progressPercent =
+            totalSentences > 0
+              ? Math.round((completedSentences / totalSentences) * 100)
+              : 0;
+
           return {
             id: lesson.id,
             title: lesson.title,
             totalSentences,
             completedSentences,
             progress: progressPercent,
-            completed: completedSentences === totalSentences && totalSentences > 0,
-            order: index + 1 // 使用数组索引作为顺序
+            completed:
+              completedSentences === totalSentences && totalSentences > 0,
+            order: index + 1,
           };
         })
       );
@@ -157,9 +172,9 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       lessonDetails.sort((a, b) => a.order - b.order);
 
       // 更新课程的课时详情
-      setCourses(prevCourses => 
-        prevCourses.map(course => 
-          course.id === courseId 
+      setCourses((prevCourses) =>
+        prevCourses.map((course) =>
+          course.id === courseId
             ? { ...course, lessons: lessonDetails }
             : course
         )
@@ -167,96 +182,84 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     } catch (error) {
       console.error("加载课时详情失败:", error);
     } finally {
-      setLoadingLessons(prev => {
+      setLoadingLessons((prev) => {
         const newSet = new Set(prev);
         newSet.delete(courseId);
         return newSet;
       });
     }
-  };
-
+  }, []);
   // 切换课程展开状态
-  const toggleCourseExpand = async (courseId: string) => {
-    const isExpanded = expandedCourses.has(courseId);
-    
-    if (isExpanded) {
-      // 收起
-      setExpandedCourses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(courseId);
-        return newSet;
-      });
-    } else {
-      // 展开
-      setExpandedCourses(prev => new Set([...prev, courseId]));
-      
-      // 如果还没有加载课时详情，则加载
-      const course = courses.find(c => c.id === courseId);
-      if (course && !course.lessons) {
-        await loadLessonDetails(courseId);
+  const toggleCourseExpand = useCallback(
+    async (courseId: string) => {
+      const isExpanded = expandedCourses.has(courseId);
+
+      if (isExpanded) {
+        // 收起
+        setExpandedCourses((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(courseId);
+          return newSet;
+        });
+      } else {
+        // 展开
+        setExpandedCourses((prev) => new Set([...prev, courseId]));
+
+        // 如果还没有加载课时详情，则加载
+        const course = courses.find((c) => c.id === courseId);
+        if (course && !course.lessons) {
+          await loadLessonDetails(courseId);
+        }
       }
-    }
-  };
+    },
+    [expandedCourses, courses, loadLessonDetails]
+  );
+
   // 重置课程学习进度并开始学习
-  const handleResetCourseProgress = async (course: CourseDisplay) => {
-    try {
-      setIsResetting(true);
-      const progressService = ProgressService.getInstance();
-      await progressService.resetCourseProgress(parseInt(course.id));
-      
-      // 重新加载课程数据以更新UI
-      await reloadCourseData();
-      
-      // 找到对应的原始课程数据并直接开始学习
+  const handleResetCourseProgress = useCallback(
+    async (course: CourseDisplay) => {
+      try {
+        setIsResetting(true);
+        const progressService = ProgressService.getInstance();
+        await progressService.resetCourseProgress(parseInt(course.id));
+
+        // 重新加载课程数据以更新UI
+        await loadCourses();
+
+        // 找到对应的原始课程数据并直接开始学习
+        const originalCourse = dbCourses.find(
+          (dbCourse) => dbCourse.id.toString() === course.id
+        );
+        if (originalCourse) {
+          onStartCourse(originalCourse);
+        }
+
+        setRestartConfirmCourse(null);
+      } catch (error) {
+        console.error("重置课程进度失败:", error);
+      } finally {
+        setIsResetting(false);
+      }
+    },
+    [loadCourses, dbCourses, onStartCourse]
+  );
+
+  // 直接开始学习课程（不弹框）
+  const handleDirectStartLearning = useCallback(
+    (course: CourseDisplay) => {
       const originalCourse = dbCourses.find(
         (dbCourse) => dbCourse.id.toString() === course.id
       );
       if (originalCourse) {
         onStartCourse(originalCourse);
       }
-      
-      setRestartConfirmCourse(null);
-    } catch (error) {
-      console.error("重置课程进度失败:", error);
-    } finally {
-      setIsResetting(false);
-    }
-  };
+    },
+    [dbCourses, onStartCourse]
+  );
 
-  // 直接开始学习课程（不弹框）
-  const handleDirectStartLearning = (course: CourseDisplay) => {
-    // 找到对应的原始课程数据
-    const originalCourse = dbCourses.find(
-      (dbCourse) => dbCourse.id.toString() === course.id
-    );
-    if (originalCourse) {
-      onStartCourse(originalCourse);
-    }
-  };
-
-  // 重新加载课程数据
-  const reloadCourseData = async () => {
-    try {
-      const factory = RepositoryFactory.getInstance();
-      const config = getStorageConfig();
-      const repository = await factory.createRepository(config);
-      const courseData = await repository.getAllCourses();
-      setDbCourses(courseData);
-      
-      // 并行转换所有课程，包含进度信息
-      const displayCoursesPromises = courseData.map(convertCourseToDisplay);
-      const displayCourses = await Promise.all(displayCoursesPromises);
-      setCourses(displayCourses);
-      
-      // 清空展开状态，因为课时详情需要重新加载
-      setExpandedCourses(new Set());
-    } catch (error) {
-      console.error("重新加载课程数据失败:", error);
-    }
-  };
-  const handleStartLearning = () => {
+  // 处理开始学习按钮点击
+  const handleStartLearning = useCallback(() => {
     if (selectedCourse) {
-      // 找到对应的原始课程数据
       const originalCourse = dbCourses.find(
         (course) => course.id.toString() === selectedCourse.id
       );
@@ -264,7 +267,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
         onStartCourse(originalCourse);
       }
     }
-  };
+  }, [selectedCourse, dbCourses, onStartCourse]);
 
   if (loading) {
     return (
@@ -285,10 +288,14 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">课程列表</h1>
         <p className="text-gray-600">{courses.length} 个课程可选</p>
-      </div>      {/* 简约列表 */}
+      </div>{" "}
+      {/* 简约列表 */}
       <div className="space-y-3">
         {courses.map((course) => (
-          <div key={course.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div
+            key={course.id}
+            className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+          >
             {/* 课程主体 */}
             <div className="p-4 hover:border-blue-300 hover:shadow-sm transition-all duration-200">
               <div className="flex items-center justify-between">
@@ -296,7 +303,9 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                   <span className="text-xl">{course.icon}</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-gray-900">{course.title}</h3>
+                      <h3 className="font-medium text-gray-900">
+                        {course.title}
+                      </h3>
                       {course.completed && (
                         <span className="text-green-600 text-sm">✓</span>
                       )}
@@ -322,7 +331,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
                         <div
                           className={`h-2 rounded-full transition-all duration-300 ${
-                            course.completed ? 'bg-green-500' : 'bg-blue-500'
+                            course.completed ? "bg-green-500" : "bg-blue-500"
                           }`}
                           style={{ width: `${course.progress}%` }}
                         ></div>
@@ -338,11 +347,15 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                       e.stopPropagation();
                       toggleCourseExpand(course.id);
                     }}
-                    title={expandedCourses.has(course.id) ? "收起课时详情" : "展开课时详情"}
+                    title={
+                      expandedCourses.has(course.id)
+                        ? "收起课时详情"
+                        : "展开课时详情"
+                    }
                   >
                     <svg
                       className={`w-4 h-4 transition-transform duration-200 ${
-                        expandedCourses.has(course.id) ? 'rotate-180' : ''
+                        expandedCourses.has(course.id) ? "rotate-180" : ""
                       }`}
                       fill="none"
                       stroke="currentColor"
@@ -355,7 +368,8 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                         d="M19 9l-7 7-7-7"
                       />
                     </svg>
-                  </button>                  <button
+                  </button>{" "}
+                  <button
                     className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -368,7 +382,11 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                       }
                     }}
                   >
-                    {course.completed ? '重新学习' : course.progress > 0 ? '继续' : '开始'}
+                    {course.completed
+                      ? "重新学习"
+                      : course.progress > 0
+                      ? "继续"
+                      : "开始"}
                   </button>
                 </div>
               </div>
@@ -383,7 +401,9 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                   </div>
                 ) : course.lessons && course.lessons.length > 0 ? (
                   <div className="p-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">课时详情</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">
+                      课时详情
+                    </h4>
                     {course.lessons.map((lesson) => (
                       <div
                         key={lesson.id}
@@ -395,12 +415,15 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                               第{lesson.order}课: {lesson.title}
                             </span>
                             {lesson.completed && (
-                              <span className="text-green-600 text-xs">✓ 已完成</span>
+                              <span className="text-green-600 text-xs">
+                                ✓ 已完成
+                              </span>
                             )}
                           </div>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>
-                              进度: {lesson.completedSentences}/{lesson.totalSentences} 句
+                              进度: {lesson.completedSentences}/
+                              {lesson.totalSentences} 句
                             </span>
                             <span>{lesson.progress}%</span>
                           </div>
@@ -408,7 +431,9 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                             <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
                               <div
                                 className={`h-1 rounded-full transition-all duration-300 ${
-                                  lesson.completed ? 'bg-green-400' : 'bg-blue-400'
+                                  lesson.completed
+                                    ? "bg-green-400"
+                                    : "bg-blue-400"
                                 }`}
                                 style={{ width: `${lesson.progress}%` }}
                               ></div>
@@ -427,7 +452,8 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
             )}
           </div>
         ))}
-      </div>{" "}      {/* 简洁的课程详情模态框 */}
+      </div>{" "}
+      {/* 简洁的课程详情模态框 */}
       <Modal
         isOpen={!!selectedCourse}
         onClose={() => setSelectedCourse(null)}
@@ -467,7 +493,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      selectedCourse.completed ? 'bg-green-500' : 'bg-blue-500'
+                      selectedCourse.completed ? "bg-green-500" : "bg-blue-500"
                     }`}
                     style={{ width: `${selectedCourse.progress}%` }}
                   ></div>
@@ -486,13 +512,16 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 onClick={handleStartLearning}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {selectedCourse.completed ? '重新学习' : selectedCourse.progress > 0 ? '继续学习' : '开始学习'}
+                {selectedCourse.completed
+                  ? "重新学习"
+                  : selectedCourse.progress > 0
+                  ? "继续学习"
+                  : "开始学习"}
               </button>
             </div>
           </div>
         )}
       </Modal>
-
       {/* 重新学习确认对话框 */}
       <Modal
         isOpen={!!restartConfirmCourse}
@@ -505,7 +534,8 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
             <div className="text-yellow-500 text-4xl mb-3">⚠️</div>
             <h3 className="text-lg font-semibold mb-2">重新学习确认</h3>
             <p className="text-gray-600 mb-4">
-              重新学习将清空「{restartConfirmCourse.title}」的所有学习记录和进度，确定要继续吗？
+              重新学习将清空「{restartConfirmCourse.title}
+              」的所有学习记录和进度，确定要继续吗？
             </p>
 
             <div className="flex gap-3">
@@ -521,12 +551,13 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isResetting}
               >
-                {isResetting ? '重置中...' : '确定重新学习'}
+                {isResetting ? "重置中..." : "确定重新学习"}
               </button>
             </div>
           </div>
         )}
-      </Modal>      {/* 重新学习确认对话框 */}
+      </Modal>{" "}
+      {/* 重新学习确认对话框 */}
       <Modal
         isOpen={!!restartConfirmCourse}
         onClose={() => setRestartConfirmCourse(null)}
@@ -538,7 +569,8 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
             <div className="text-yellow-500 text-4xl mb-3">⚠️</div>
             <h3 className="text-lg font-semibold mb-2">重新学习确认</h3>
             <p className="text-gray-600 mb-4">
-              重新学习将清空「{restartConfirmCourse.title}」的所有学习记录和进度，确定要继续吗？
+              重新学习将清空「{restartConfirmCourse.title}
+              」的所有学习记录和进度，确定要继续吗？
             </p>
 
             <div className="flex gap-3">
@@ -554,7 +586,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isResetting}
               >
-                {isResetting ? '重置中...' : '重新学习'}
+                {isResetting ? "重置中..." : "重新学习"}
               </button>
             </div>
           </div>

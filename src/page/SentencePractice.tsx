@@ -47,10 +47,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [usedSentences, setUsedSentences] = useState<number[]>([]);
   const [wordInputs, setWordInputs] = useState<string[]>([]);
   const [wordResults, setWordResults] = useState<(boolean | null)[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // 练习完成状态
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
-  const [showCompletionButtons, setShowCompletionButtons] = useState(false); // 数据仓储初始化 - 加载课程和课时信息
+
+  // 数据仓储初始化 - 加载课程和课时信息
   useEffect(() => {
     const initializeCourse = async () => {
       if (!selectedCourse) {
@@ -147,7 +147,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
       setCurrentSentence(null);
       setIsAllSentencesCompleted(false);
-      setShowCompletionButtons(false);
     } catch (err) {
       console.error("Failed to load lesson sentences:", err);
       setError(
@@ -238,7 +237,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         if (!wordInputs.some((input) => !input.trim())) {
           await checkAnswer();
         }
-      } // Ctrl + N - 显示答案
+      }
+
+      // Ctrl + N - 显示答案
       if (e.ctrlKey && e.key === "n" && isCorrect !== true && !showAnswer) {
         e.preventDefault();
         showCorrectAnswer().catch(console.error);
@@ -275,7 +276,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     if (availableSentences.length === 0) {
       // 所有句子都练习完了
       setIsAllSentencesCompleted(true);
-      setShowCompletionButtons(true);
       return; // 不加载新句子，显示完成界面
     } else {
       // 按照句子ID顺序选择下一个句子，确保学习进度的一致性
@@ -284,11 +284,12 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       setCurrentSentence(nextSentence);
       setUsedSentences((prev) => [...prev, nextSentence.id]);
       setIsAllSentencesCompleted(false);
-      setShowCompletionButtons(false);
     }
     setFeedback("");
     setIsCorrect(null);
-    setShowAnswer(false); // 自动播放英文（延迟一点时间让UI更新完成）
+    setShowAnswer(false);
+
+    // 自动播放英文（延迟一点时间让UI更新完成）
     if (speechSettings.autoPlay && nextSentence) {
       setTimeout(() => {
         speakEnglish(nextSentence.english);
@@ -431,12 +432,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const nextSentence = () => {
     loadNextSentence();
   };
-
   // 再来一遍 - 重置当前练习
   const restartPractice = () => {
     setUsedSentences([]);
     setIsAllSentencesCompleted(false);
-    setShowCompletionButtons(false);
     loadNextSentence();
   };
   // 切换到下一课时
@@ -473,7 +472,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     setAttempts(0);
     setUsedSentences([]);
     setIsAllSentencesCompleted(false);
-    setShowCompletionButtons(false);
     loadNextSentence();
   };
 
@@ -556,10 +554,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       </div>
     );
   }
-
   const accuracy = attempts > 0 ? Math.round((score / attempts) * 100) : 0;
   // 练习完成显示
-  if (isAllSentencesCompleted && showCompletionButtons) {
+  if (isAllSentencesCompleted) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-sm mx-auto px-6">
@@ -594,7 +591,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       </div>
     );
   }
-
   if (!currentSentence) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
@@ -604,6 +600,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       </div>
     );
   }
+
   return (
     <div
       className={`relative h-full flex flex-col ${
@@ -613,7 +610,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       {/* 小窗模式下的拖动区域 */}
       {isFloating && (
         <div className="absolute inset-0 drag-region" style={{ zIndex: 0 }} />
-      )}{" "}
+      )}
       {/* 课程信息显示 */}
       {selectedCourse && !isFloating && (
         <div
@@ -649,8 +646,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     />
                   </svg>
                 </button>
-              )}
-
+              )}{" "}
               {/* 课程课时标题 */}
               <div
                 className={`inline-flex items-center gap-2 ${
@@ -686,7 +682,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   </>
                 )}
               </div>
-
               {/* 下一节按钮 */}
               {currentLesson && allLessons.length > 1 && (
                 <button
@@ -717,22 +712,21 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )}{" "}
       {/* 主要内容区域 */}
       <div className="flex-1 overflow-y-auto flex items-center relative z-10">
-        {" "}
         <div
           className={`w-full ${isFloating ? "px-2 py-3" : "px-6 py-8"} ${
             isFloating ? "drag-region" : ""
           }`}
         >
-          {" "}
           {/* 主要练习区域 */}
           <div
             className={`mx-auto w-full ${
               isFloating ? "max-w-full drag-region" : "max-w-full"
             }`}
           >
+            {" "}
             {/* 中文句子 */}
             <div
               className={`text-center ${isFloating ? "mb-4" : "mb-8"} ${
@@ -744,7 +738,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   isFloating ? "mb-1" : "mb-2"
                 } ${isFloating ? "drag-region" : ""}`}
               >
-                {" "}
                 <p
                   className={`${
                     isFloating ? "text-base" : "text-xl"
@@ -754,7 +747,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 >
                   {currentSentence.chinese}
                 </p>
-              </div>{" "}
+              </div>
               {!isFloating && (
                 <div
                   className={`text-xs text-gray-400 ${
@@ -764,7 +757,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   {getDifficultyText(currentSentence.difficulty)}
                 </div>
               )}
-            </div>{" "}
+            </div>
             {/* 输入框区域 */}
             <div className={`mb-8 ${isFloating ? "drag-region" : ""}`}>
               <div
@@ -775,7 +768,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 {parseWordsAndPunctuation(currentSentence.english).map(
                   (token, idx) => (
                     <div key={idx} className="flex items-baseline">
-                      {" "}
                       <input
                         type="text"
                         value={wordInputs[idx] || ""}
@@ -804,7 +796,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                         }}
                         disabled={isCorrect === true || showAnswer}
                         placeholder={showAnswer ? token.word : ""}
-                      />{" "}
+                      />
                       {token.punctuation && (
                         <span
                           className={`${
@@ -822,7 +814,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   )
                 )}
               </div>
-            </div>{" "}
+            </div>
             {/* 反馈信息 */}
             {feedback && (
               <div
@@ -840,10 +832,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   } ${isFloating ? "drag-region" : ""}`}
                 >
                   {feedback}
-                </p>
+                </p>{" "}
               </div>
-            )}{" "}
-          </div>{" "}
+            )}
+          </div>
+
           {/* 设置模态框 */}
           <Modal
             isOpen={isDrawerOpen}
@@ -852,9 +845,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             maxWidth="max-w-lg"
           >
             <Settings />
-          </Modal>{" "}
+          </Modal>
         </div>
-      </div>{" "}
+      </div>
       {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
@@ -890,19 +883,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             <div className="text-center">
               <div className="text-sm font-semibold text-blue-600">
                 {accuracy}%
-              </div>
+              </div>{" "}
               <div className="text-xs text-gray-500">准确率</div>
             </div>
           </div>
         </div>
-      )}{" "}
+      )}
       {/* 简约的底部操作栏 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="flex w-full bg-white border-t border-gray-200 px-6 py-4">
           <div className="w-full flex items-center justify-between">
             {/* 左侧和中间的按钮 */}
             <div className="flex items-center justify-center gap-3 flex-1">
-              {" "}
               <button
                 onClick={handleSpeakEnglish}
                 disabled={isPlaying}
@@ -919,24 +911,23 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>播放</span>
+                <span>播放</span>{" "}
                 <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
                   Ctrl+'
                 </span>
               </button>
               {isCorrect !== true && !showAnswer && (
                 <>
-                  {" "}
                   <button
                     onClick={() => checkAnswer()}
                     disabled={wordInputs.some((input) => !input.trim())}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
                   >
-                    <span>检查</span>
+                    <span>检查</span>{" "}
                     <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
                       Enter
                     </span>
-                  </button>{" "}
+                  </button>
                   <button
                     onClick={() => showCorrectAnswer().catch(console.error)}
                     className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
@@ -964,14 +955,15 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   onClick={window.electronAPI.toggleFloatingMode}
                   className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                 >
-                  <span>切换窗口化</span>
+                  <span>切换窗口化</span>{" "}
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
                     Ctrl+Shift+P
                   </span>
                 </button>
               }
             </div>
-          </div>{" "}
+          </div>
+
           {/* 右侧的语音设置按钮和窗口化 */}
           <div className="flex items-center gap-3">
             <Settings
