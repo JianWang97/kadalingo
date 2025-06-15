@@ -238,7 +238,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         if (!wordInputs.some((input) => !input.trim())) {
           await checkAnswer();
         }
-      }      // Ctrl + N - 显示答案
+      } // Ctrl + N - 显示答案
       if (e.ctrlKey && e.key === "n" && isCorrect !== true && !showAnswer) {
         e.preventDefault();
         showCorrectAnswer().catch(console.error);
@@ -615,7 +615,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         <div className="absolute inset-0 drag-region" style={{ zIndex: 0 }} />
       )}{" "}
       {/* 课程信息显示 */}
-      {selectedCourse && (
+      {selectedCourse && !isFloating && (
         <div
           className={`${isFloating ? "py-2 px-2" : "py-3 px-6"} ${
             isFloating ? "drag-region" : ""
@@ -754,39 +754,16 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 >
                   {currentSentence.chinese}
                 </p>
-                <button
-                  onClick={handleSpeakEnglish}
-                  disabled={isPlaying}
-                  className={`${
-                    isFloating ? "p-1" : "p-2"
-                  } text-gray-400 hover:text-blue-600 rounded-lg transition-colors disabled:opacity-50 no-drag`}
-                  title="播放英文发音"
-                >
-                  <svg
-                    className={`${isFloating ? "w-4 h-4" : "w-5 h-5"}`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                    <path
-                      fillRule="evenodd"
-                      d="M13.243 8.757a1 1 0 011.414 0A4.978 4.978 0 0116 12a4.978 4.978 0 01-1.343 3.243 1 1 0 11-1.414-1.414A2.978 2.978 0 0014 12a2.978 2.978 0 00-.757-1.757 1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
               </div>{" "}
-              <div
-                className={`text-xs text-gray-400 ${
-                  isFloating ? "drag-region" : ""
-                }`}
-              >
-                {getDifficultyText(currentSentence.difficulty)}
-              </div>
+              {!isFloating && (
+                <div
+                  className={`text-xs text-gray-400 ${
+                    isFloating ? "drag-region" : ""
+                  }`}
+                >
+                  {getDifficultyText(currentSentence.difficulty)}
+                </div>
+              )}
             </div>{" "}
             {/* 输入框区域 */}
             <div className={`mb-8 ${isFloating ? "drag-region" : ""}`}>
@@ -959,7 +936,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
                       Enter
                     </span>
-                  </button>{" "}                  <button
+                  </button>{" "}
+                  <button
                     onClick={() => showCorrectAnswer().catch(console.error)}
                     className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                   >

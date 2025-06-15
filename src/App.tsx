@@ -10,10 +10,6 @@ import { KeyboardSoundProvider } from "./contexts/KeyboardSoundContext";
 import { useFloatingMode } from "./hooks/useFloatingMode";
 import { Course } from "./data/types";
 
-// 在开发环境中导入测试工具
-if (process.env.NODE_ENV === "development") {
-  import("./utils/speechServiceTester");
-}
 
 function App() {
   const [currentPage, setCurrentPage] = useState<
