@@ -963,15 +963,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               }
             </div>
           </div>
-
-          {/* 右侧的语音设置按钮和窗口化 */}
-          <div className="flex items-center gap-3">
-            <Settings
-              compact={true}
-              onOpenSettings={() => setIsDrawerOpen(true)}
-              className="bg-white hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg no-drag"
-            />
-          </div>
         </div>
       )}
     </div>

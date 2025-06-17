@@ -3,6 +3,7 @@ import React, { useState } from "react";
 interface SidebarProps {
   currentPage: string;
   onPageChange: (page: "courses" | "practice" | "add") => void;
+  onOpenSettings?: () => void;
 }
 
 interface MenuItem {
@@ -36,6 +37,7 @@ const menuItems: MenuItem[] = [
 export const Sidebar: React.FC<SidebarProps> = ({
   currentPage,
   onPageChange,
+  onOpenSettings,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   return (
@@ -99,16 +101,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         ))}
       </nav>{" "}
-      {/* 侧边栏底部 */}
-      <div className="p-2 border-t border-gray-200">
-        <div className="flex items-center justify-center text-gray-400">
-          <div className="text-base">⚙️</div>
+      {/* 侧边栏底部 - 设置按钮 */}
+      <div className="p-1 border-t border-gray-200">
+        <button
+          onClick={onOpenSettings}
+          className="w-full flex items-center p-2 rounded-md transition-all duration-200 group text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+          title={!isExpanded ? "设置" : ""}
+        >
+          <div className="text-base flex-shrink-0 flex items-center justify-center w-5">
+            ⚙️
+          </div>
           {isExpanded && (
-            <div className="ml-2 text-sm">
-              <div className="text-gray-600">设置</div>
+            <div className="ml-2 text-left overflow-hidden">
+              <div className="text-sm font-medium whitespace-nowrap">设置</div>
+              <div className="text-xs text-gray-500 whitespace-nowrap">
+                应用设置
+              </div>
             </div>
           )}
-        </div>
+        </button>
       </div>{" "}
     </div>
   );

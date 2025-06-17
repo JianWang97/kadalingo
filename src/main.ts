@@ -98,8 +98,8 @@ ipcMain.handle('is-floating-mode', () => {
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 960,
+    height: 720,
     title: '咔哒英语', // 设置窗口标题
     frame: false, // 隐藏窗口边框和工具栏
     transparent: true, // 启用透明背景支持

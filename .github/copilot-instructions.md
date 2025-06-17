@@ -1,9 +1,12 @@
 # GitHub Copilot 指令
+##  你在编写代码时，会有格式的问题，把我原先正常换行的代码合成到一行，导致代码无法正常运行。请确保在编写代码时，保持代码的格式和换行正确。
 
-这部分很重要 begin
+
+
+# 目标
 这个一个MVP项目，所以第一版 代码需要尽可能简洁和高效。以便更好的维护和扩展。
-主题要简单简约，符合​Material Design的设计，不要一眼ai感
-这部分很重要 end
+符合​Material Design 3的设计规范，使用 Tailwind CSS 进行样式设计。
+
 
 ## 项目概述
 这是一个使用 Electron Forge、TypeScript 和 Tailwind CSS 构建的 Electron React 应用程序。该应用程序是一个用于语言学习的句子练习工具。
