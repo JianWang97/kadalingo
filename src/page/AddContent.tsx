@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { Modal, Toast, Drawer } from "../components/common";
 import CoursePreview from "../components/CoursePreview";
+import StreamingCoursePreview from "../components/StreamingCoursePreview";
 import { useLLM } from "../contexts/LLMContext";
 import type { GeneratedCourse } from "../services/llmService";
 
 const AddContent: React.FC = () => {
-  const { isConnected } = useLLM();
-  // 生成配置
+  const { isConnected } = useLLM();  // 生成配置
   const [generateConfig, setGenerateConfig] = useState({
     topic: "",
     description: "", // 课程详情描述
     level: "beginner" as "beginner" | "intermediate" | "advanced",
     lessonCount: 5, // 课程课时数
     sentencesPerLesson: 10, // 每课时句子数量
+    useStreaming: true, // 是否使用流式生成
   });
   // 生成状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,7 +46,6 @@ const AddContent: React.FC = () => {
   const hideToast = () => {
     setToast((prev) => ({ ...prev, show: false }));
   };
-
   // 生成内容
   const handleGenerate = async () => {
     if (!isConnected) {
@@ -61,31 +61,49 @@ const AddContent: React.FC = () => {
     setIsGenerating(true);
     setError("");
     setGeneratedContent(null);
+    setIsDrawerOpen(true); // 立即打开抽屉显示生成过程
 
-    try {
-      // 动态导入 LLM 服务
-      const { getLLMService } = await import("../services/llmService");
-      const llmService = getLLMService();
+    // 如果不使用流式生成，使用传统方式
+    if (!generateConfig.useStreaming) {
+      try {
+        // 动态导入 LLM 服务
+        const { getLLMService } = await import("../services/llmService");
+        const llmService = getLLMService();
 
-      if (!llmService) {
-        throw new Error("LLM服务未初始化，请先在设置中配置并测试连接");
+        if (!llmService) {
+          throw new Error("LLM服务未初始化，请先在设置中配置并测试连接");
+        }
+
+        // 计算总句子数量
+        const totalSentences =
+          generateConfig.lessonCount * generateConfig.sentencesPerLesson;
+        const course = await llmService.generateCourse(
+          generateConfig.topic,
+          generateConfig.level,
+          totalSentences
+        );
+        setGeneratedContent(course);
+      } catch (err) {
+        setError("生成失败：" + (err as Error).message);
+        setIsDrawerOpen(false); // 如果生成失败，关闭抽屉
+      } finally {
+        setIsGenerating(false);
       }
-
-      // 计算总句子数量
-      const totalSentences =
-        generateConfig.lessonCount * generateConfig.sentencesPerLesson;
-      const course = await llmService.generateCourse(
-        generateConfig.topic,
-        generateConfig.level,
-        totalSentences
-      );
-      setGeneratedContent(course);
-      setIsDrawerOpen(true); // 生成成功后打开抽屉
-    } catch (err) {
-      setError("生成失败：" + (err as Error).message);
-    } finally {
-      setIsGenerating(false);
     }
+    // 流式生成模式会由 StreamingCoursePreview 组件处理
+  };
+
+  // 流式生成完成回调
+  const handleStreamingComplete = (course: GeneratedCourse) => {
+    setGeneratedContent(course);
+    setIsGenerating(false);
+  };
+
+  // 流式生成错误回调
+  const handleStreamingError = (error: string) => {
+    setError("生成失败：" + error);
+    setIsGenerating(false);
+    setIsDrawerOpen(false);
   };
 
   return (
@@ -356,12 +374,54 @@ const AddContent: React.FC = () => {
                         strokeWidth={2}
                         d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                       />
-                    </svg>
+                    </svg>                  </div>
+                </div>
+
+                {/* 生成模式选择 */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    生成模式
+                  </label>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center space-x-6">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="generationMode"
+                          checked={generateConfig.useStreaming}
+                          onChange={() => setGenerateConfig({
+                            ...generateConfig,
+                            useStreaming: true
+                          })}
+                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500"
+                        />
+                        <div className="ml-2">
+                          <span className="text-sm font-medium text-gray-900">流式生成</span>
+                          <p className="text-xs text-gray-500">实时查看生成过程，推荐使用</p>
+                        </div>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="generationMode"
+                          checked={!generateConfig.useStreaming}
+                          onChange={() => setGenerateConfig({
+                            ...generateConfig,
+                            useStreaming: false
+                          })}
+                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500"
+                        />
+                        <div className="ml-2">
+                          <span className="text-sm font-medium text-gray-900">传统生成</span>
+                          <p className="text-xs text-gray-500">一次性完成生成</p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
                 {/* 统计信息卡片 */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100 mt-4">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
                   <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
                     生成预览
                   </h4>
@@ -427,19 +487,17 @@ const AddContent: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>{" "}
-        {/* 生成内容抽屉 */}
+        </div>{" "}        {/* 生成内容抽屉 */}
         <Drawer
           isOpen={isDrawerOpen}
           onClose={() => setIsDrawerOpen(false)}
-          title="生成的课程内容"
+          title={generateConfig.useStreaming ? "实时生成课程" : "生成的课程内容"}
           width="xl"
         >
-          {" "}
-          {generatedContent && (
-            <CoursePreview
-              generatedContent={generatedContent}
+          {generateConfig.useStreaming ? (
+            <StreamingCoursePreview
               generateConfig={generateConfig}
+              isGenerating={isGenerating}
               onSaveSuccess={(savedCourseInfo) => {
                 setSavedCourseInfo(savedCourseInfo);
                 setShowSuccessModal(true);
@@ -448,8 +506,26 @@ const AddContent: React.FC = () => {
               onSaveError={(error) => {
                 setError(error);
               }}
+              onGenerationComplete={handleStreamingComplete}
+              onGenerationError={handleStreamingError}
               isInDrawer={true}
             />
+          ) : (
+            generatedContent && (
+              <CoursePreview
+                generatedContent={generatedContent}
+                generateConfig={generateConfig}
+                onSaveSuccess={(savedCourseInfo) => {
+                  setSavedCourseInfo(savedCourseInfo);
+                  setShowSuccessModal(true);
+                  setIsDrawerOpen(false);
+                }}
+                onSaveError={(error) => {
+                  setError(error);
+                }}
+                isInDrawer={true}
+              />
+            )
           )}
         </Drawer>
         {/* Toast 组件 */}

@@ -40,37 +40,41 @@ export const Settings: React.FC<SettingsProps> = ({
     updateSettings: updateKeyboardSettings,
     isSupported: isKeyboardSoundSupported,
   } = useKeyboardSound();
-  
+
   // LLM 相关状态和方法
   const llmContext = useLLM();
   const [showLLMModal, setShowLLMModal] = useState(false);
-  const [editingLLMSettings, setEditingLLMSettings] = useState<LLMSettings | null>(null);
+  const [editingLLMSettings, setEditingLLMSettings] =
+    useState<LLMSettings | null>(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteSettingsId, setDeleteSettingsId] = useState<string>("");
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
-    type: 'success' | 'error' | 'warning' | 'info';
+    type: "success" | "error" | "warning" | "info";
   }>({
     show: false,
-    message: '',
-    type: 'info'
+    message: "",
+    type: "info",
   });
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("speech");
 
   // Toast 工具函数
-  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "warning" | "info" = "info"
+  ) => {
     setToast({
       show: true,
       message,
-      type
+      type,
     });
   };
 
   const hideToast = () => {
-    setToast(prev => ({ ...prev, show: false }));
+    setToast((prev) => ({ ...prev, show: false }));
   };
 
   // LLM 配置相关处理函数
@@ -119,7 +123,11 @@ export const Settings: React.FC<SettingsProps> = ({
   const handleSaveLLMConfig = async () => {
     if (!editingLLMSettings) return;
 
-    if (!editingLLMSettings.name || !editingLLMSettings.baseUrl || !editingLLMSettings.apiKey) {
+    if (
+      !editingLLMSettings.name ||
+      !editingLLMSettings.baseUrl ||
+      !editingLLMSettings.apiKey
+    ) {
       showToast("请填写配置名称、Base URL和API Key", "error");
       return;
     }
@@ -138,88 +146,327 @@ export const Settings: React.FC<SettingsProps> = ({
   const renderLLMSettings = () => {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">LLM 配置管理</h3>
+        {/* 头部区域 */}
+        <div className="flex items-center justify-between p-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">LLM 配置管理</h3>
+              <p className="text-sm text-gray-500">管理您的 AI 模型配置</p>
+            </div>
+          </div>
           <button
             onClick={handleNewLLMConfig}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="group relative overflow-hidden px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
           >
-            新建配置
+            <span className="relative z-10 flex items-center gap-2">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              新建配置
+            </span>
           </button>
-        </div>
-
+        </div>{" "}
         {/* 配置列表 */}
         <div className="space-y-3">
           {llmContext.settings.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-4xl mb-4">🤖</div>
-              <p>暂无 LLM 配置</p>
-              <p className="text-sm mt-2">点击"新建配置"添加您的第一个配置</p>
+            <div className="text-center py-12 px-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl mb-4">
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h4 className="text-base font-semibold text-gray-900 mb-1">
+                暂无 LLM 配置
+              </h4>
+              <p className="text-sm text-gray-500 mb-4">
+                开始添加您的第一个 AI 模型配置
+              </p>
+              <button
+                onClick={handleNewLLMConfig}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                创建配置
+              </button>
             </div>
           ) : (
             llmContext.settings.map((setting) => (
               <div
                 key={setting.id}
-                className={`border rounded-lg p-4 transition-all duration-200 ${
+                className={`group relative overflow-visible rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
                   setting.id === llmContext.selectedSettingsId
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 shadow-md"
+                    : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h4 className="font-medium text-gray-900">{setting.name}</h4>
-                      <div className="flex items-center gap-2">
-                        {setting.isConnected ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                            已连接
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full mr-1"></div>
-                            未连接
-                          </span>
-                        )}
-                        {setting.id === llmContext.selectedSettingsId && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                            当前选中
-                          </span>
+                {/* 选中指示器 */}
+                {setting.id === llmContext.selectedSettingsId && (
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+                )}
+
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      {/* 主要信息 - 紧凑显示 */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-1.5 rounded-lg ${
+                            setting.isConnected ? "bg-green-100" : "bg-gray-100"
+                          }`}
+                        >
+                          <svg
+                            className={`w-3.5 h-3.5 ${
+                              setting.isConnected
+                                ? "text-green-600"
+                                : "text-gray-400"
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {" "}
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-sm font-semibold text-gray-900 truncate">
+                              {setting.name}
+                            </h4>
+                            {/* 连接状态指示器 */}
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                setting.isConnected
+                                  ? "bg-green-500 animate-pulse"
+                                  : "bg-gray-400"
+                              }`}
+                              title={setting.isConnected ? "已连接" : "未连接"}
+                            ></div>
+                            {/* 使用状态指示器 */}
+                            {setting.id === llmContext.selectedSettingsId && (
+                              <div
+                                className="w-2 h-2 bg-blue-500 rounded-full"
+                                title="当前使用中"
+                              >
+                                <div className="w-full h-full bg-blue-600 rounded-full animate-ping"></div>
+                              </div>
+                            )}
+                          </div>
+                          {/* 基本信息 - 单行显示 */}
+                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <span
+                              className="truncate max-w-[120px]"
+                              title={setting.model}
+                            >
+                              <span className="font-medium">模型:</span>{" "}
+                              {setting.model}
+                            </span>
+                            <span
+                              className="truncate max-w-[180px]"
+                              title={setting.baseUrl}
+                            >
+                              <span className="font-medium">URL:</span>{" "}
+                              {setting.baseUrl}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 详细信息 - 悬停时显示 */}
+                      <div className="absolute left-4 right-4 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 bg-purple-100 rounded">
+                              <svg
+                                className="w-3 h-3 text-purple-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 font-medium">模型</p>
+                              <p className="text-gray-900 font-semibold">
+                                {setting.model}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 bg-blue-100 rounded">
+                              <svg
+                                className="w-3 h-3 text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                                />
+                              </svg>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-gray-500 font-medium">
+                                Base URL
+                              </p>
+                              <p
+                                className="text-gray-900 font-semibold truncate"
+                                title={setting.baseUrl}
+                              >
+                                {setting.baseUrl}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        {setting.lastTestedAt && (
+                          <div className="flex items-center gap-2 pt-2 mt-2 border-t border-gray-100">
+                            <div className="p-1 bg-green-100 rounded">
+                              <svg
+                                className="w-3 h-3 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 font-medium">
+                                最后测试
+                              </p>
+                              <p className="text-gray-900 font-semibold">
+                                {new Date(setting.lastTestedAt).toLocaleString(
+                                  "zh-CN",
+                                  {
+                                    month: "2-digit",
+                                    day: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
-                    <div className="mt-2 text-sm text-gray-600 space-y-1">
-                      <p>模型: {setting.model}</p>
-                      <p>Base URL: {setting.baseUrl}</p>
-                      {setting.lastTestedAt && (
-                        <p>
-                          最后测试: {new Date(setting.lastTestedAt).toLocaleString()}
-                        </p>
+
+                    {/* 操作按钮 - 紧凑布局 */}
+                    <div className="flex items-center gap-1.5 ml-4">
+                      {setting.id !== llmContext.selectedSettingsId && (
+                        <button
+                          onClick={() => llmContext.selectSettings(setting.id)}
+                          className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+                          title="设为当前使用"
+                        >
+                          使用
+                        </button>
                       )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {setting.id !== llmContext.selectedSettingsId && (
                       <button
-                        onClick={() => llmContext.selectSettings(setting.id)}
-                        className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+                        onClick={() => handleEditLLMConfig(setting)}
+                        className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all duration-200"
+                        title="编辑配置"
                       >
-                        使用
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleEditLLMConfig(setting)}
-                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => handleDeleteLLMConfig(setting.id)}
-                      className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                    >
-                      删除
-                    </button>
+                      <button
+                        onClick={() => handleDeleteLLMConfig(setting.id)}
+                        className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200"
+                        title="删除配置"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -635,7 +882,8 @@ export const Settings: React.FC<SettingsProps> = ({
               </>
             )}
           </div>
-        );      case "general":
+        );
+      case "general":
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -698,7 +946,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
       default:
         return null;
-    }  };
+    }
+  };
   return (
     <>
       <div className={`flex h-full bg-white overflow-hidden ${className}`}>
@@ -733,7 +982,8 @@ export const Settings: React.FC<SettingsProps> = ({
             <div className="h-full">{renderTabContent()}</div>
           </div>
         </div>
-      </div>      {/* LLM 配置 Modal */}
+      </div>{" "}
+      {/* LLM 配置 Modal */}
       <Modal
         isOpen={showLLMModal}
         onClose={() => {
@@ -744,111 +994,287 @@ export const Settings: React.FC<SettingsProps> = ({
         maxWidth="max-w-2xl"
       >
         {editingLLMSettings && (
-          <div className="space-y-4">
-            {/* 配置名称 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                配置名称 *
-              </label>
-              <input
-                type="text"
-                value={editingLLMSettings.name}
-                onChange={(e) =>
-                  setEditingLLMSettings({
-                    ...editingLLMSettings,
-                    name: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="例如：OpenAI GPT-3.5"
-              />
+          <div className="space-y-5">
+            {/* 表单网格布局 */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* 配置名称 */}
+              <div className="group">
+                {" "}
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                  <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                  配置名称
+                  <span className="text-red-500 text-xs">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editingLLMSettings.name}
+                    onChange={(e) =>
+                      setEditingLLMSettings({
+                        ...editingLLMSettings,
+                        name: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
+                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             transition-all duration-200 group-hover:border-gray-300"
+                    placeholder="例如：OpenAI GPT-3.5"
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Base URL */}
+              <div className="group">
+                {" "}
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                  <div className="w-1 h-4 bg-green-500 rounded-full"></div>
+                  Base URL
+                  <span className="text-red-500 text-xs">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editingLLMSettings.baseUrl}
+                    onChange={(e) =>
+                      setEditingLLMSettings({
+                        ...editingLLMSettings,
+                        baseUrl: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
+                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             transition-all duration-200 group-hover:border-gray-300"
+                    placeholder="https://api.openai.com/v1"
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* API Key */}
+              <div className="group">
+                {" "}
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                  <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
+                  API Key
+                  <span className="text-red-500 text-xs">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={editingLLMSettings.apiKey}
+                    onChange={(e) =>
+                      setEditingLLMSettings({
+                        ...editingLLMSettings,
+                        apiKey: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
+                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             transition-all duration-200 group-hover:border-gray-300"
+                    placeholder="sk-..."
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* 模型 */}
+              <div className="group">
+                {" "}
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                  <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
+                  模型名称
+                  <span className="text-gray-400 text-xs ml-auto">可选</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editingLLMSettings.model}
+                    onChange={(e) =>
+                      setEditingLLMSettings({
+                        ...editingLLMSettings,
+                        model: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
+                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             transition-all duration-200 group-hover:border-gray-300"
+                    placeholder="gpt-3.5-turbo"
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Base URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Base URL *
-              </label>
-              <input
-                type="text"
-                value={editingLLMSettings.baseUrl}
-                onChange={(e) =>
-                  setEditingLLMSettings({
-                    ...editingLLMSettings,
-                    baseUrl: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://api.openai.com/v1"
-              />
-            </div>
+            {/* 分隔线 */}
+            <div className="border-t border-gray-100 pt-4"></div>
 
-            {/* API Key */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                API Key *
-              </label>
-              <input
-                type="password"
-                value={editingLLMSettings.apiKey}
-                onChange={(e) =>
-                  setEditingLLMSettings({
-                    ...editingLLMSettings,
-                    apiKey: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="sk-..."
-              />
-            </div>
-
-            {/* 模型 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                模型名称
-              </label>
-              <input
-                type="text"
-                value={editingLLMSettings.model}
-                onChange={(e) =>
-                  setEditingLLMSettings({
-                    ...editingLLMSettings,
-                    model: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="gpt-3.5-turbo"
-              />
-            </div>
-
-            {/* 按钮组 */}
-            <div className="flex gap-3 pt-4">
+            {/* 按钮组 - 紧凑设计 */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleTestLLMConnection}
                 disabled={isTestingConnection}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 
+                         text-white text-sm font-medium rounded-xl hover:from-green-600 hover:to-green-700 
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 
+                         shadow-sm hover:shadow-md disabled:shadow-none min-w-[100px]"
               >
-                {isTestingConnection ? "测试中..." : "测试连接"}
+                {isTestingConnection ? (
+                  <>
+                    <svg
+                      className="animate-spin w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    测试中
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                    测试连接
+                  </>
+                )}
               </button>
+
               <button
                 onClick={handleSaveLLMConfig}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 
+                         text-white text-sm font-medium rounded-xl hover:from-blue-600 hover:to-blue-700 
+                         transition-all duration-200 shadow-sm hover:shadow-md"
               >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
                 保存配置
               </button>
+
               <button
                 onClick={() => {
                   setShowLLMModal(false);
                   setEditingLLMSettings(null);
                 }}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-gray-600 text-sm font-medium 
+                         border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 
+                         transition-all duration-200"
               >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
                 取消
               </button>
             </div>
           </div>
         )}
-      </Modal>      {/* 删除确认 Modal */}
+      </Modal>
+      {/* 删除确认 Modal */}
       <Modal
         isOpen={showDeleteModal}
         onClose={() => {
@@ -859,7 +1285,9 @@ export const Settings: React.FC<SettingsProps> = ({
         maxWidth="max-w-sm"
       >
         <div className="space-y-4">
-          <p className="text-gray-600">确定要删除这个 LLM 配置吗？此操作无法撤销。</p>
+          <p className="text-gray-600">
+            确定要删除这个 LLM 配置吗？此操作无法撤销。
+          </p>
           <div className="flex gap-3">
             <button
               onClick={confirmDeleteLLMConfig}
@@ -878,7 +1306,8 @@ export const Settings: React.FC<SettingsProps> = ({
             </button>
           </div>
         </div>
-      </Modal>      {/* Toast 通知 */}
+      </Modal>{" "}
+      {/* Toast 通知 */}
       <Toast
         isVisible={toast.show}
         message={toast.message}
