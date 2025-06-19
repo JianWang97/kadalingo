@@ -5,9 +5,18 @@ export const useFloatingMode = () => {
 
   useEffect(() => {
     const checkFloatingMode = async () => {
+      // 检查是否在 Electron 环境中
       if (window.electronAPI?.isFloatingMode) {
-        const floating = await window.electronAPI.isFloatingMode();
-        setIsFloating(floating);
+        try {
+          const floating = await window.electronAPI.isFloatingMode();
+          setIsFloating(floating);
+        } catch (error) {
+          console.warn('Failed to check floating mode:', error);
+          setIsFloating(false);
+        }
+      } else {
+        // Web 环境下不支持浮窗模式
+        setIsFloating(false);
       }
     };
 

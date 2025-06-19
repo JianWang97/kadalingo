@@ -11,18 +11,20 @@
   },
   "bugs": {
     "url": "https://github.com/JianWang6/electron-forge-react-vite/issues"
-  },
-  "scripts": {
+  },  "scripts": {
     "start": "electron-forge start",
     "dev": "electron-forge start",
     "build": "electron-forge make",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "web:dev": "vite --config vite.web.config.ts",
+    "web:build": "vite build --config vite.web.config.ts",
+    "web:preview": "vite preview --config vite.web.config.ts",
     "lint": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --ext .ts,.tsx . --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rimraf out .vite"
+    "clean": "rimraf out .vite dist-web"
   },
   "keywords": [
     "english",

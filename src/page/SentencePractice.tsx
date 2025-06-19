@@ -487,8 +487,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       default:
         return "未知";
     }
-  };
-  // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
+  };  // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
   useEffect(() => {
     const handleFloatingHotkey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "P" || e.key === "p")) {
@@ -949,10 +948,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     Enter
                   </span>
                 </button>
-              )}
-              {
+              )}              {window.electronAPI?.toggleFloatingMode && (
                 <button
-                  onClick={window.electronAPI.toggleFloatingMode}
+                  onClick={() => window.electronAPI?.toggleFloatingMode?.()}
                   className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                 >
                   <span>切换窗口化</span>{" "}
@@ -960,7 +958,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     Ctrl+Shift+P
                   </span>
                 </button>
-              }
+              )}
             </div>
           </div>
         </div>

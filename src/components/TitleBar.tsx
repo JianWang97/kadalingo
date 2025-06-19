@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useFloatingMode } from '../hooks/useFloatingMode';
+import { isElectron } from '../utils/environment';
 
 interface TitleBarProps {
   title?: string;
 }
-
-// 检测是否在 Electron 环境中运行
-const isElectron = (): boolean => {
-  return (
-    typeof window !== 'undefined' &&
-    window.electronAPI !== undefined &&
-    typeof window.electronAPI === 'object'
-  );
-};
 
 const TitleBar: React.FC<TitleBarProps> = ({ title = "咔哒英语" }) => {
   const isFloating = useFloatingMode();

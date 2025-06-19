@@ -504,7 +504,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-100 rounded-xl shadow-inner">
                 <span className="text-2xl">
-                  {selectedCourseForLessons.icon}
+                  <selectedCourseForLessons.icon className="w-8 h-8 text-purple-400" />
                 </span>
               </div>{" "}
               <div>
