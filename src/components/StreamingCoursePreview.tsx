@@ -35,17 +35,18 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
   onGenerationComplete,
   onGenerationError,
   isInDrawer = false,
-}) => {
-  const [partialCourse, setPartialCourse] = useState<PartialCourse>({
+}) => {  const [partialCourse, setPartialCourse] = useState<PartialCourse>({
     sentences: [],
     isComplete: false,
-  });  const [progress, setProgress] = useState(0);
+  });
+  const [thinkingContent, setThinkingContent] = useState<string>("");
+  const [showThinking, setShowThinking] = useState<boolean>(true);const [progress, setProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [generationError, setGenerationError] = useState<string>("");
-  const [lastAddedSentenceIndex, setLastAddedSentenceIndex] = useState(-1);
-  const streamRef = useRef<AsyncGenerator<StreamChunk, void, unknown> | null>(null);
+  const [lastAddedSentenceIndex, setLastAddedSentenceIndex] = useState(-1);  const streamRef = useRef<AsyncGenerator<StreamChunk, void, unknown> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSentenceRef = useRef<HTMLDivElement>(null);
+  const thinkingRef = useRef<HTMLPreElement>(null);
 
   // 自动滚动到最新内容
   const scrollToBottom = () => {
@@ -57,7 +58,6 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
       });
     }
   };
-
   // 监听句子数量变化，自动滚动
   useEffect(() => {
     if (partialCourse.sentences.length > 0 && isGenerating) {
@@ -66,6 +66,13 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
       setTimeout(scrollToBottom, 100);
     }
   }, [partialCourse.sentences.length, isGenerating]);
+
+  // 监听 thinking 内容变化，自动滚动到底部
+  useEffect(() => {
+    if (thinkingContent && thinkingRef.current && showThinking) {
+      thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
+    }
+  }, [thinkingContent, showThinking]);
 
   // 清除高亮效果
   useEffect(() => {
@@ -83,13 +90,13 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
     if (isGenerating && !streamRef.current) {
       startStreamingGeneration();
     }
-  }, [isGenerating]);
-
-  const startStreamingGeneration = async () => {
+  }, [isGenerating]);  const startStreamingGeneration = async () => {
     try {
       setPartialCourse({ sentences: [], isComplete: false });
       setProgress(0);
       setGenerationError("");
+      setThinkingContent("");
+      setShowThinking(false);
 
       // 动态导入 LLM 服务
       const { getLLMService } = await import("../services/llmService");
@@ -123,11 +130,17 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
       streamRef.current = null;
     }
   };
-
   const handleStreamChunk = (chunk: StreamChunk) => {
     setProgress(chunk.progress || 0);
 
     switch (chunk.type) {
+      case 'thinking':
+        if (typeof chunk.data === 'string') {
+          setThinkingContent(chunk.data);
+          setShowThinking(true);
+        }
+        break;
+
       case 'title':
         if (typeof chunk.data === 'string') {
           setPartialCourse(prev => ({
@@ -165,9 +178,7 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
             onGenerationComplete(completeCourse);
           }
         }
-        break;
-
-      case 'error':
+        break;      case 'error':
         if (chunk.data && typeof chunk.data === 'object' && 'error' in chunk.data) {
           const error = (chunk.data as { error: string }).error;
           setGenerationError(error);
@@ -318,8 +329,7 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
       ref={containerRef}
       className={`${isInDrawer ? "h-full" : "min-h-screen"} bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-y-auto scroll-smooth`}
     >
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
-        {/* 生成进度 */}
+      <div className="max-w-4xl mx-auto p-4 space-y-4">        {/* 生成进度 */}
         {isGenerating && (
           <div className="backdrop-blur-sm bg-white/90 rounded-xl shadow-lg border border-white/20 p-4">
             <div className="flex items-center justify-between mb-2">
@@ -332,6 +342,42 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
                 style={{ width: `${progress}%` }}
               />
             </div>
+          </div>
+        )}        {/* Thinking 内容展示 */}
+        {thinkingContent && (
+          <div className="backdrop-blur-sm bg-blue-50/90 rounded-xl shadow-lg border border-blue-200/50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 p-1 bg-blue-100 rounded-full mr-2">
+                  <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-semibold text-blue-800">AI 思考过程</h3>
+                {isGenerating && (
+                  <div className="ml-2 flex items-center">
+                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse mr-1"></div>
+                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse mr-1" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowThinking(!showThinking)}
+                className="text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors"
+              >
+                {showThinking ? "隐藏" : "显示"}
+              </button>
+            </div>            {showThinking && (
+              <div className="bg-white/60 rounded-lg p-3 border border-blue-100">
+                <pre 
+                  ref={thinkingRef}
+                  className="text-sm text-blue-900 whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-y-auto"
+                >
+                  {thinkingContent}
+                </pre>
+              </div>
+            )}
           </div>
         )}
 
@@ -418,12 +464,9 @@ const StreamingCoursePreview: React.FC<StreamingCoursePreviewProps> = ({
               </div>
             ))}
           </div>
-        )}
-
-        {/* 保存按钮 */}
+        )}        {/* 保存按钮 */}
         {partialCourse.isComplete && (
-          <div className="sticky bottom-4 backdrop-blur-sm bg-white/90 rounded-xl shadow-lg border border-white/20 p-4">
-            <div className="flex items-center justify-between">
+          <div className="sticky bottom-4 backdrop-blur-sm bg-white/90 rounded-xl shadow-lg border border-white/20 p-4">            <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
                 <span className="font-medium">课程生成完毕</span>
                 <span className="ml-2">

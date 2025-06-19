@@ -139,3 +139,560 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 移除所有表单元素的默认 outline，避免黄色边框 */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
+  outline: none !important;
+}
+
+/* 确保自定义 focus 样式正常工作 */
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px var(--tw-ring-color) !important;
+}
+
+/* TitleBar Material Design 3 增强样式 */
+.titlebar-surface {
+  background: linear-gradient(135deg, 
+    hsl(from var(--color-surface) h s l / 0.98) 0%, 
+    hsl(from var(--color-surface-container) h s l / 0.95) 100%
+  );
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+/* Sidebar Material Design 3 样式 - 与TitleBar保持一致 */
+.sidebar-surface {
+  background: linear-gradient(180deg, 
+    hsl(from var(--color-surface) h s l / 0.98) 0%, 
+    hsl(from var(--color-surface-container) h s l / 0.95) 100%
+  );
+  box-shadow: 
+    2px 0 8px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+/* Sidebar 菜单项样式 */
+.sidebar-item {
+  color: var(--color-on-surface);
+  background: transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-item:hover {
+  background: linear-gradient(135deg, var(--color-primary-container)/20, var(--color-secondary-container)/10);
+  color: var(--color-primary);
+  transform: translateX(2px);
+  box-shadow: 
+    0 2px 8px rgba(103, 80, 164, 0.08),
+    0 0 0 1px rgba(103, 80, 164, 0.05);
+}
+
+.sidebar-item-active {
+  background: linear-gradient(135deg, #EADDFF, rgba(232, 222, 248, 0.5));
+  color: #21005D;
+  transform: translateX(4px);
+  box-shadow: 
+    0 4px 12px rgba(103, 80, 164, 0.15),
+    0 0 0 1px rgba(103, 80, 164, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* AI课程特殊样式 */
+.sidebar-item-ai {
+  color: var(--color-on-surface);
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-item-ai:hover {
+  background: linear-gradient(135deg, 
+    rgba(147, 51, 234, 0.15) 0%, 
+    rgba(59, 130, 246, 0.15) 50%, 
+    rgba(6, 182, 212, 0.15) 100%
+  );
+  transform: translateX(3px) scale(1.02);
+  box-shadow: 
+    0 4px 20px rgba(147, 51, 234, 0.25),
+    0 0 0 1px rgba(147, 51, 234, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+.sidebar-item-active-ai {
+  background: linear-gradient(135deg, 
+    rgba(147, 51, 234, 0.2) 0%, 
+    rgba(59, 130, 246, 0.2) 50%, 
+    rgba(6, 182, 212, 0.2) 100%
+  );
+  transform: translateX(6px) scale(1.05);
+  box-shadow: 
+    0 6px 25px rgba(147, 51, 234, 0.3),
+    0 0 0 1px rgba(147, 51, 234, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 20px rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(147, 51, 234, 0.4);
+}
+
+/* AI课程动画效果 */
+@keyframes ai-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(147, 51, 234, 0.3),
+      0 0 20px rgba(59, 130, 246, 0.2),
+      0 0 30px rgba(6, 182, 212, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px rgba(147, 51, 234, 0.5),
+      0 0 30px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(6, 182, 212, 0.2);
+  }
+}
+
+@keyframes ai-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.sidebar-item-active-ai {
+  animation: ai-glow 3s ease-in-out infinite;
+}
+
+.sidebar-item-ai:hover {
+  animation: ai-pulse 2s ease-in-out infinite;
+}
+
+/* 渐变文字动画 */
+.sidebar-item-ai .text-transparent {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* 暗色模式下的 Sidebar 样式 */
+.dark .sidebar-surface {
+  background: linear-gradient(180deg, 
+    hsl(from var(--color-surface-dark) h s l / 0.95) 0%, 
+    hsl(from var(--color-surface-container-dark) h s l / 0.90) 100%
+  );
+  box-shadow: 
+    2px 0 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.dark .sidebar-item {
+  color: var(--color-on-surface-dark);
+}
+
+.dark .sidebar-item:hover {
+  background: linear-gradient(135deg, var(--color-primary-container-dark)/30, var(--color-secondary-container-dark)/20);
+  color: var(--color-primary-dark);
+}
+
+.dark .sidebar-item-active {
+  background: linear-gradient(135deg, var(--color-primary-container-dark), var(--color-secondary-container-dark)/60);
+  color: var(--color-on-primary-container-dark);
+}
+
+/* TitleBar图标容器增强 */
+.titlebar-icon {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  box-shadow: 
+    0 3px 10px rgba(103, 80, 164, 0.2),
+    0 0 0 1px rgba(103, 80, 164, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.titlebar-icon:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 
+    0 6px 16px rgba(103, 80, 164, 0.3),
+    0 0 0 1px rgba(103, 80, 164, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* 时间显示增强 */
+.time-display {
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.time-display:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(103, 80, 164, 0.15);
+}
+
+/* 窗口控制按钮增强 */
+.window-control-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(5px);
+}
+
+.window-control-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.window-control-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.window-control-btn:hover::before {
+  width: 120%;
+  height: 120%;
+  opacity: 0.1;
+}
+
+.window-control-btn:active {
+  transform: scale(0.95);
+}
+
+.window-control-btn:active::before {
+  opacity: 0.15;
+  transition-duration: 0.1s;
+}
+
+/* 关闭按钮特殊样式 */
+.window-control-btn.close-btn:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.window-control-btn.close-btn:hover::before {
+  background: #ef4444;
+  opacity: 0.15;
+}
+
+.window-control-btn.close-btn:active::before {
+  opacity: 0.25;
+}
+
+/* 标题文字增强 */
+.titlebar-title {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.titlebar-subtitle {
+  opacity: 0.7;
+  font-feature-settings: 'kern' 1;
+}
+
+/* Material Design 3 CSS 变量定义 */
+:root {
+  --color-primary: #6750A4;
+  --color-primary-container: #EADDFF;
+  --color-on-primary: #FFFFFF;
+  --color-on-primary-container: #21005D;
+  --color-secondary: #625B71;
+  --color-secondary-container: #E8DEF8;
+  --color-on-secondary: #FFFFFF;
+  --color-on-secondary-container: #1D192B;
+  --color-tertiary: #7D5260;
+  --color-tertiary-container: #FFD8E4;
+  --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #31111D;
+  --color-error: #BA1A1A;
+  --color-error-container: #FFDAD6;
+  --color-on-error: #FFFFFF;
+  --color-on-error-container: #410002;
+  --color-outline: #79747E;
+  --color-background: #FFFBFE;
+  --color-on-background: #1C1B1F;
+  --color-surface: #FFFBFE;
+  --color-on-surface: #1C1B1F;
+  --color-surface-variant: #E7E0EC;
+  --color-on-surface-variant: #49454F;
+  --color-surface-container: #F3EDF7;
+  --color-surface-container-high: #ECE6F0;
+  --color-surface-container-highest: #E6E0E9;
+  --color-inverse-surface: #313033;
+  --color-inverse-on-surface: #F4EFF4;
+}
+
+/* 暗色模式变量 */
+.dark {
+  --color-primary: #D0BCFF;
+  --color-primary-container: #4F378B;
+  --color-on-primary: #381E72;
+  --color-on-primary-container: #EADDFF;
+  --color-secondary: #CCC2DC;
+  --color-secondary-container: #4A4458;
+  --color-on-secondary: #332D41;
+  --color-on-secondary-container: #E8DEF8;
+  --color-tertiary: #EFB8C8;
+  --color-tertiary-container: #633B48;
+  --color-on-tertiary: #492532;
+  --color-on-tertiary-container: #FFD8E4;
+  --color-error: #FFB4AB;
+  --color-error-container: #93000A;
+  --color-on-error: #690005;
+  --color-on-error-container: #FFDAD6;
+  --color-outline: #938F99;
+  --color-background: #10121B;
+  --color-on-background: #E6E1E5;
+  --color-surface: #10121B;
+  --color-on-surface: #E6E1E5;
+  --color-surface-variant: #49454F;
+  --color-on-surface-variant: #CAC4D0;
+  --color-surface-container: #1D1B20;
+  --color-surface-container-high: #272529;
+  --color-surface-container-highest: #322F35;
+  --color-inverse-surface: #E6E1E5;
+  --color-inverse-on-surface: #313033;
+}
+
+/* TitleBar图标动画增强 */
+@keyframes iconPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes iconGlow {
+  0% { box-shadow: 0 2px 8px rgba(103, 80, 164, 0.15), 0 0 0 1px rgba(103, 80, 164, 0.1); }
+  50% { box-shadow: 0 4px 16px rgba(103, 80, 164, 0.25), 0 0 0 1px rgba(103, 80, 164, 0.2); }
+  100% { box-shadow: 0 2px 8px rgba(103, 80, 164, 0.15), 0 0 0 1px rgba(103, 80, 164, 0.1); }
+}
+
+.bg-primary{
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  color: var(--color-on-primary);
+}
+
+.titlebar-icon {
+  animation: iconGlow 4s ease-in-out infinite;
+}
+
+.titlebar-icon:hover {
+  animation: iconPulse 0.6s ease-in-out;
+}
+
+/* 窗口控制按钮涟漪效果 */
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+.window-control-btn:active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ripple 0.6s ease-out;
+}
+
+/* 暗色主题适配 */
+.dark .titlebar-surface {
+  background: linear-gradient(135deg, 
+    hsl(from var(--color-surface) h s l / 0.95) 0%, 
+    hsl(from var(--color-surface-container) h s l / 0.92) 100%
+  );
+}
+
+.dark .titlebar-icon {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  animation: iconGlow 4s ease-in-out infinite;
+}
+
+@keyframes iconGlowDark {
+  0% { box-shadow: 0 2px 8px rgba(208, 188, 255, 0.15), 0 0 0 1px rgba(208, 188, 255, 0.1); }
+  50% { box-shadow: 0 4px 16px rgba(208, 188, 255, 0.25), 0 0 0 1px rgba(208, 188, 255, 0.2); }
+  100% { box-shadow: 0 2px 8px rgba(208, 188, 255, 0.15), 0 0 0 1px rgba(208, 188, 255, 0.1); }
+}
+
+.dark .titlebar-icon {
+  animation: iconGlowDark 4s ease-in-out infinite;
+}
+
+/* 时间显示组件样式 */
+.time-display {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.6) 0%, 
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .time-display {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.4) 0%, 
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.time-display:hover {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .time-display:hover {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.6) 0%, 
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+/* 等宽数字字体 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* 文本截断和工具提示增强样式 */
+.truncate-with-tooltip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
+/* 工具提示样式优化 */
+.tooltip {
+  position: absolute;
+  z-index: 1000;
+  padding: 8px 12px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(-2px);
+}
+
+.tooltip.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* 工具提示箭头 */
+.tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 16px;
+  width: 8px;
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: rotate(45deg);
+}
+
+/* 确保 line-clamp 样式的兼容性 */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 悬停状态下的文本显示优化 */
+.hover-show-full:hover {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+/* 响应式工具提示 */
+@media (max-width: 768px) {
+  .tooltip {
+    max-width: calc(100vw - 32px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+  }
+  
+  .tooltip.show {
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  .tooltip::before {
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  
+  .sidebar-surface {
+    width: 60px !important;
+  }
+  
+  .titlebar-surface {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .time-display {
+    display: none;
+  }
+}

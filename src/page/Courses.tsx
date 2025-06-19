@@ -6,6 +6,7 @@ import {
   getStorageConfig,
 } from "../data/repositories/RepositoryFactory";
 import { ProgressService } from "../services/progressService";
+import { MdChat, MdBusinessCenter, MdFlight, MdSchool } from "react-icons/md";
 
 // 课时详情接口
 interface LessonDetail {
@@ -23,7 +24,7 @@ interface CourseDisplay {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   level: "beginner" | "intermediate" | "advanced";
   lessonCount: number;
   completed: boolean;
@@ -32,16 +33,18 @@ interface CourseDisplay {
 }
 
 // 根据课程分类获取图标
-const getIconForCategory = (category: string): string => {
-  const iconMap: Record<string, string> = {
-    日常对话: "💬",
-    商务英语: "💼",
-    旅游英语: "✈️",
-    学术写作: "📚",
-    基础对话: "💬",
-    商务沟通: "💼",
+const getIconForCategory = (
+  category: string
+): React.ComponentType<{ className?: string }> => {
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    日常对话: MdChat,
+    基础对话: MdChat,
+    商务英语: MdBusinessCenter,
+    商务沟通: MdBusinessCenter,
+    旅游英语: MdFlight,
+    学术写作: MdSchool,
   };
-  return iconMap[category] || "📚";
+  return iconMap[category] || MdSchool;
 };
 
 // 将数据库课程转换为显示课程
@@ -68,7 +71,7 @@ const convertCourseToDisplay = async (
 // 获取难度级别的样式
 const getLevelColor = (level: CourseDisplay["level"]) => {
   const levelColors: Record<CourseDisplay["level"], string> = {
-    beginner: "bg-green-100 text-green-800 border-green-200",
+    beginner: "bg-blue-100 text-blue-800 border-blue-200",
     intermediate: "bg-yellow-100 text-yellow-800 border-yellow-200",
     advanced: "bg-red-100 text-red-800 border-red-200",
   };
@@ -91,15 +94,11 @@ interface CoursesProps {
 
 const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
   const [courses, setCourses] = useState<CourseDisplay[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<CourseDisplay | null>(
-    null
-  );
   const [loading, setLoading] = useState(true);
   const [dbCourses, setDbCourses] = useState<Course[]>([]);
-  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(
-    new Set()
-  );
-  const [loadingLessons, setLoadingLessons] = useState<Set<string>>(new Set());
+  const [selectedCourseForLessons, setSelectedCourseForLessons] =
+    useState<CourseDisplay | null>(null);
+  const [loadingLessons, setLoadingLessons] = useState(false);
   const [restartConfirmCourse, setRestartConfirmCourse] =
     useState<CourseDisplay | null>(null);
   const [isResetting, setIsResetting] = useState(false);
@@ -127,11 +126,11 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
 
   useEffect(() => {
     loadCourses();
-  }, [loadCourses]);
-  // 加载课时详情
-  const loadLessonDetails = useCallback(async (courseId: string) => {
+  }, [loadCourses]); // 加载课时详情 - 改为弹出框形式
+  const loadLessonDetails = useCallback(async (course: CourseDisplay) => {
     try {
-      setLoadingLessons((prev) => new Set([...prev, courseId]));
+      setLoadingLessons(true);
+      setSelectedCourseForLessons(course);
 
       const factory = RepositoryFactory.getInstance();
       const config = getStorageConfig();
@@ -139,13 +138,13 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       const progressService = ProgressService.getInstance();
 
       // 获取课程的所有课时
-      const lessons = await repository.getLessonsByCourse(parseInt(courseId));
+      const lessons = await repository.getLessonsByCourse(parseInt(course.id));
 
       // 为每个课时获取进度信息
       const lessonDetails: LessonDetail[] = await Promise.all(
         lessons.map(async (lesson, index) => {
           const progress = await progressService.getLessonProgress(
-            parseInt(courseId),
+            parseInt(course.id),
             lesson.id
           );
           const totalSentences = lesson.sentences?.length || 0;
@@ -171,48 +170,23 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       // 按课时顺序排序
       lessonDetails.sort((a, b) => a.order - b.order);
 
-      // 更新课程的课时详情
-      setCourses((prevCourses) =>
-        prevCourses.map((course) =>
-          course.id === courseId
-            ? { ...course, lessons: lessonDetails }
-            : course
-        )
+      // 更新选中课程的课时详情
+      setSelectedCourseForLessons((prevCourse) =>
+        prevCourse ? { ...prevCourse, lessons: lessonDetails } : null
       );
     } catch (error) {
       console.error("加载课时详情失败:", error);
     } finally {
-      setLoadingLessons((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(courseId);
-        return newSet;
-      });
+      setLoadingLessons(false);
     }
   }, []);
-  // 切换课程展开状态
-  const toggleCourseExpand = useCallback(
-    async (courseId: string) => {
-      const isExpanded = expandedCourses.has(courseId);
 
-      if (isExpanded) {
-        // 收起
-        setExpandedCourses((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(courseId);
-          return newSet;
-        });
-      } else {
-        // 展开
-        setExpandedCourses((prev) => new Set([...prev, courseId]));
-
-        // 如果还没有加载课时详情，则加载
-        const course = courses.find((c) => c.id === courseId);
-        if (course && !course.lessons) {
-          await loadLessonDetails(courseId);
-        }
-      }
+  // 显示课时详情弹出框
+  const showLessonDetails = useCallback(
+    async (course: CourseDisplay) => {
+      await loadLessonDetails(course);
     },
-    [expandedCourses, courses, loadLessonDetails]
+    [loadLessonDetails]
   );
 
   // 重置课程学习进度并开始学习
@@ -243,8 +217,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     },
     [loadCourses, dbCourses, onStartCourse]
   );
-
-  // 直接开始学习课程（不弹框）
+  // 处理开始学习按钮点击
   const handleDirectStartLearning = useCallback(
     (course: CourseDisplay) => {
       const originalCourse = dbCourses.find(
@@ -256,18 +229,6 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     },
     [dbCourses, onStartCourse]
   );
-
-  // 处理开始学习按钮点击
-  const handleStartLearning = useCallback(() => {
-    if (selectedCourse) {
-      const originalCourse = dbCourses.find(
-        (course) => course.id.toString() === selectedCourse.id
-      );
-      if (originalCourse) {
-        onStartCourse(originalCourse);
-      }
-    }
-  }, [selectedCourse, dbCourses, onStartCourse]);
 
   if (loading) {
     return (
@@ -281,82 +242,37 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
       </div>
     );
   }
-
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      {/* 简洁的标题 */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">课程列表</h1>
-        <p className="text-gray-600">{courses.length} 个课程可选</p>
-      </div>{" "}
-      {/* 简约列表 */}
-      <div className="space-y-3">
-        {courses.map((course) => (
-          <div
-            key={course.id}
-            className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-          >
-            {/* 课程主体 */}
-            <div className="p-4 hover:border-blue-300 hover:shadow-sm transition-all duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="text-xl">{course.icon}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-gray-900">
-                        {course.title}
-                      </h3>
-                      {course.completed && (
-                        <span className="text-green-600 text-sm">✓</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span
-                        className={`px-2 py-0.5 text-xs rounded-full ${getLevelColor(
-                          course.level
-                        )}`}
-                      >
-                        {getLevelText(course.level)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {course.lessonCount} 课时
-                      </span>
-                      {course.progress > 0 && (
-                        <span className="text-sm text-blue-600 font-medium">
-                          {course.progress}%
-                        </span>
-                      )}
-                    </div>
-                    {course.progress > 0 && (
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            course.completed ? "bg-green-500" : "bg-blue-500"
-                          }`}
-                          style={{ width: `${course.progress}%` }}
-                        ></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* 展开/收起按钮 */}
-                  <button
-                    className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCourseExpand(course.id);
-                    }}
-                    title={
-                      expandedCourses.has(course.id)
-                        ? "收起课时详情"
-                        : "展开课时详情"
-                    }
-                  >
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* 现代化标题区域 */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-transparent">
+            课程中心
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            发现适合您的语言学习课程，从基础到进阶，开启您的学习之旅
+          </p>
+          <div className="mt-4 inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-white/50">
+            <span className="text-sm font-medium text-gray-700">
+              共 {courses.length} 个课程可选
+            </span>
+          </div>
+        </div>{" "}
+        {/* 卡片网格布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <div
+              key={course.id}
+              className="group bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
+            >
+              {/* 卡片头部 */}
+              <div className="relative p-6 bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur">
+                {/* 完成状态徽章 */}
+                {course.completed && (
+                  <div className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg">
                     <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        expandedCourses.has(course.id) ? "rotate-180" : ""
-                      }`}
+                      className="w-4 h-4 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -365,156 +281,429 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
+                        d="M5 13l4 4L19 7"
                       />
                     </svg>
-                  </button>{" "}
+                  </div>
+                )}
+                {/* 课程图标 */}
+                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-100 rounded-2xl mb-4 shadow-inner">
+                  <span className="text-3xl">
+                    {<course.icon className="w-8 h-8 text-purple-400" />}
+                  </span>
+                </div>{" "}
+                {/* 课程标题 - 单行显示，支持悬停显示全部 */}
+                <div className="relative mb-2">
+                  <h3
+                    className="text-xl font-bold text-gray-900 hover:text-purple-600 transition-colors truncate cursor-help peer"
+                    title={course.title}
+                  >
+                    {course.title}
+                  </h3>
+                  {/* 悬停标题时显示完整标题的工具提示 */}
+                  <div className="absolute left-0 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none">
+                    <div className="max-w-xs break-words whitespace-normal">
+                      {course.title}
+                    </div>
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
+                  </div>
+                </div>
+                {/* 课程描述 - 固定三行高度 */}
+                <div className="mb-4" style={{ height: "3.6rem" }}>
+                  <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed h-full">
+                    {course.description || "暂无课程描述"}
+                  </p>
+                </div>
+                {/* 标签区域 */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full border ${getLevelColor(
+                      course.level
+                    )}`}
+                  >
+                    {getLevelText(course.level)}
+                  </span>
+                  <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full border border-gray-200">
+                    {course.lessonCount} 课时
+                  </span>
+                </div>
+              </div>
+
+              {/* 进度条区域 - 固定高度，避免影响按钮对齐 */}
+              <div
+                className="px-6 pb-4 bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur"
+                style={{ minHeight: "60px" }}
+              >
+                {course.progress > 0 ? (
+                  <div className="h-full flex flex-col justify-center">
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                      <span className="font-medium">学习进度</span>
+                      <span className="font-bold text-purple-600">
+                        {course.progress}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          course.completed
+                            ? "bg-gradient-to-r from-blue-400 to-blue-500"
+                            : "bg-gradient-to-r from-purple-400 to-purple-500"
+                        }`}
+                        style={{ width: `${course.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <span className="text-gray-400 text-sm">尚未开始学习</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 卡片底部操作区 - 固定位置 */}
+              <div className="p-6 bg-white/50 backdrop-blur border-t border-gray-200/50">
+                <div className="flex items-center gap-3">
+                  {/* 课时详情按钮 */}
                   <button
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    className="flex items-center justify-center w-10 h-10 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      showLessonDetails(course);
+                    }}
+                    title="查看课时详情"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* 开始学习按钮 */}
+                  <button
+                    className={`flex-1 px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                      course.completed
+                        ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl"
+                        : course.progress > 0
+                        ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl"
+                        : "bg-gradient-to-r from-purple-500 to-purple-500 hover:from-purple-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl"
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (course.completed) {
-                        // 如果课程已完成，弹出重新学习确认对话框
                         setRestartConfirmCourse(course);
                       } else {
-                        // 否则直接开始学习（继续或开始），不弹框
                         handleDirectStartLearning(course);
                       }
                     }}
                   >
-                    {course.completed
-                      ? "重新学习"
-                      : course.progress > 0
-                      ? "继续"
-                      : "开始"}
+                    <span className="flex items-center justify-center gap-2">
+                      {course.completed ? (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          重新学习
+                        </>
+                      ) : course.progress > 0 ? (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          继续学习
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          开始学习
+                        </>
+                      )}
+                    </span>
                   </button>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+        {/* 空状态 */}
+        {courses.length === 0 && !loading && (
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
+              <svg
+                className="w-10 h-10 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              暂无课程
+            </h3>
+            <p className="text-gray-600">课程正在加载中，请稍候...</p>
+          </div>
+        )}{" "}
+      </div>
 
-            {/* 课时详情 - 展开时显示 */}
-            {expandedCourses.has(course.id) && (
-              <div className="border-t border-gray-200 bg-gray-50">
-                {loadingLessons.has(course.id) ? (
-                  <div className="p-4 text-center text-gray-500">
-                    加载课时详情中...
+      {/* 课时详情弹出框 */}
+      <Modal
+        isOpen={!!selectedCourseForLessons}
+        onClose={() => setSelectedCourseForLessons(null)}
+        title=""
+        maxWidth="max-w-2xl"
+      >
+        {selectedCourseForLessons && (
+          <div className="p-2">
+            {/* 弹出框头部 */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-100 rounded-xl shadow-inner">
+                <span className="text-2xl">
+                  {selectedCourseForLessons.icon}
+                </span>
+              </div>{" "}
+              <div>
+                <div className="relative mb-1">
+                  <h3
+                    className="text-xl font-bold text-gray-900 truncate cursor-help peer"
+                    title={selectedCourseForLessons.title}
+                  >
+                    {selectedCourseForLessons.title}
+                  </h3>
+                  {/* 悬停标题时显示完整标题的工具提示 */}
+                  <div className="absolute left-0 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none">
+                    <div className="max-w-xs break-words whitespace-normal">
+                      {selectedCourseForLessons.title}
+                    </div>
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
                   </div>
-                ) : course.lessons && course.lessons.length > 0 ? (
-                  <div className="p-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">
-                      课时详情
-                    </h4>
-                    {course.lessons.map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-100"
-                      >
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full border ${getLevelColor(
+                      selectedCourseForLessons.level
+                    )}`}
+                  >
+                    {getLevelText(selectedCourseForLessons.level)}
+                  </span>
+                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full border border-gray-200">
+                    {selectedCourseForLessons.lessonCount} 课时
+                  </span>
+                  {selectedCourseForLessons.completed && (
+                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full border border-blue-200">
+                      已完成
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 课时详情内容 */}
+            <div className="border rounded-xl bg-gray-50/50 p-4">
+              <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 text-purple-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                课时详情
+              </h4>
+
+              {loadingLessons ? (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center gap-2 text-gray-500">
+                    <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">加载课时详情中...</span>
+                  </div>
+                </div>
+              ) : selectedCourseForLessons.lessons &&
+                selectedCourseForLessons.lessons.length > 0 ? (
+                <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                  {selectedCourseForLessons.lessons.map((lesson) => (
+                    <div
+                      key={lesson.id}
+                      className="p-4 bg-white/80 backdrop-blur rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              第{lesson.order}课: {lesson.title}
+                            <span className="text-sm font-semibold text-gray-900">
+                              第{lesson.order}课
                             </span>
                             {lesson.completed && (
-                              <span className="text-green-600 text-xs">
-                                ✓ 已完成
-                              </span>
+                              <div className="flex items-center justify-center w-5 h-5 bg-blue-500 rounded-full">
+                                <svg
+                                  className="w-3 h-3 text-white"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              </div>
                             )}
+                          </div>{" "}
+                          <div className="relative mb-2">
+                            <h5
+                              className="text-sm font-medium text-gray-800 truncate cursor-help peer"
+                              title={lesson.title}
+                            >
+                              {lesson.title}
+                            </h5>
+                            {/* 悬停课时标题时显示完整标题的工具提示 */}
+                            <div className="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none">
+                              <div className="max-w-xs break-words whitespace-normal">
+                                {lesson.title}
+                              </div>
+                              <div className="absolute -top-0.5 left-2 w-1 h-1 bg-gray-800 rotate-45"></div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>
-                              进度: {lesson.completedSentences}/
+                          <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                            <span className="flex items-center gap-1">
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                              {lesson.completedSentences}/
                               {lesson.totalSentences} 句
                             </span>
-                            <span>{lesson.progress}%</span>
+                            <span className="font-semibold text-purple-600">
+                              {lesson.progress}%
+                            </span>
                           </div>
                           {lesson.totalSentences > 0 && (
-                            <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className={`h-1 rounded-full transition-all duration-300 ${
+                                className={`h-2 rounded-full transition-all duration-300 ${
                                   lesson.completed
-                                    ? "bg-green-400"
-                                    : "bg-blue-400"
+                                    ? "bg-gradient-to-r from-blue-400 to-blue-500"
+                                    : "bg-gradient-to-r from-purple-400 to-purple-500"
                                 }`}
                                 style={{ width: `${lesson.progress}%` }}
-                              ></div>
+                              />
                             </div>
                           )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    暂无课时数据
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>{" "}
-      {/* 简洁的课程详情模态框 */}
-      <Modal
-        isOpen={!!selectedCourse}
-        onClose={() => setSelectedCourse(null)}
-        title=""
-        maxWidth="max-w-sm"
-      >
-        {selectedCourse && (
-          <div className="text-center py-2">
-            <div className="text-3xl mb-3">{selectedCourse.icon}</div>
-            <h3 className="text-lg font-semibold mb-2">
-              {selectedCourse.title}
-            </h3>
-
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span
-                className={`px-2 py-1 text-xs rounded-full ${getLevelColor(
-                  selectedCourse.level
-                )}`}
-              >
-                {getLevelText(selectedCourse.level)}
-              </span>
-              <span className="text-sm text-gray-500">
-                {selectedCourse.lessonCount} 课时
-              </span>
-              {selectedCourse.completed && (
-                <span className="text-green-600 text-sm">已完成</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <svg
+                    className="w-8 h-8 mx-auto mb-2 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6"
+                    />
+                  </svg>
+                  <span className="text-sm">暂无课时数据</span>
+                </div>
               )}
             </div>
 
-            {/* 进度信息 */}
-            {selectedCourse.progress > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                  <span>学习进度</span>
-                  <span>{selectedCourse.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      selectedCourse.completed ? "bg-green-500" : "bg-blue-500"
-                    }`}
-                    style={{ width: `${selectedCourse.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3">
+            {/* 弹出框底部按钮 */}
+            <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={() => setSelectedCourseForLessons(null)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                取消
+                关闭
               </button>
               <button
-                onClick={handleStartLearning}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => {
+                  if (selectedCourseForLessons.completed) {
+                    setSelectedCourseForLessons(null);
+                    setRestartConfirmCourse(selectedCourseForLessons);
+                  } else {
+                    setSelectedCourseForLessons(null);
+                    handleDirectStartLearning(selectedCourseForLessons);
+                  }
+                }}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                  selectedCourseForLessons.completed
+                    ? "bg-orange-600 hover:bg-orange-700 text-white"
+                    : selectedCourseForLessons.progress > 0
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-purple-600 hover:bg-purple-700 text-white"
+                }`}
               >
-                {selectedCourse.completed
+                {selectedCourseForLessons.completed
                   ? "重新学习"
-                  : selectedCourse.progress > 0
+                  : selectedCourseForLessons.progress > 0
                   ? "继续学习"
                   : "开始学习"}
               </button>
@@ -522,6 +711,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
           </div>
         )}
       </Modal>
+
       {/* 重新学习确认对话框 */}
       <Modal
         isOpen={!!restartConfirmCourse}
@@ -547,42 +737,10 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 取消
               </button>
               <button
-                onClick={() => handleResetCourseProgress(restartConfirmCourse)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isResetting}
-              >
-                {isResetting ? "重置中..." : "确定重新学习"}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>{" "}
-      {/* 重新学习确认对话框 */}
-      <Modal
-        isOpen={!!restartConfirmCourse}
-        onClose={() => setRestartConfirmCourse(null)}
-        title=""
-        maxWidth="max-w-sm"
-      >
-        {restartConfirmCourse && (
-          <div className="text-center py-2">
-            <div className="text-yellow-500 text-4xl mb-3">⚠️</div>
-            <h3 className="text-lg font-semibold mb-2">重新学习确认</h3>
-            <p className="text-gray-600 mb-4">
-              重新学习将清空「{restartConfirmCourse.title}
-              」的所有学习记录和进度，确定要继续吗？
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setRestartConfirmCourse(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={isResetting}
-              >
-                取消
-              </button>
-              <button
-                onClick={() => handleResetCourseProgress(restartConfirmCourse)}
+                onClick={() =>
+                  restartConfirmCourse &&
+                  handleResetCourseProgress(restartConfirmCourse)
+                }
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isResetting}
               >

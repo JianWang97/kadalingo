@@ -149,7 +149,7 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* 头部区域 */}
         <div className="flex items-center justify-between p-1">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+            <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -171,7 +171,7 @@ export const Settings: React.FC<SettingsProps> = ({
           </div>
           <button
             onClick={handleNewLLMConfig}
-            className="group relative overflow-hidden px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            className="group relative overflow-hidden px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
           >
             <span className="relative z-10 flex items-center gap-2">
               <svg
@@ -195,9 +195,9 @@ export const Settings: React.FC<SettingsProps> = ({
         <div className="space-y-3">
           {llmContext.settings.length === 0 ? (
             <div className="text-center py-12 px-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-100 to-purple-100 rounded-xl mb-4">
                 <svg
-                  className="w-6 h-6 text-blue-600"
+                  className="w-6 h-6 text-purple-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -218,7 +218,7 @@ export const Settings: React.FC<SettingsProps> = ({
               </p>
               <button
                 onClick={handleNewLLMConfig}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-purple-700 transition-all duration-200"
               >
                 <svg
                   className="w-4 h-4"
@@ -242,13 +242,13 @@ export const Settings: React.FC<SettingsProps> = ({
                 key={setting.id}
                 className={`group relative overflow-visible rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
                   setting.id === llmContext.selectedSettingsId
-                    ? "border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 shadow-md"
+                    ? "border-purple-500 bg-gradient-to-r from-purple-50 to-purple-50 shadow-md"
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
                 {/* 选中指示器 */}
                 {setting.id === llmContext.selectedSettingsId && (
-                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 to-purple-600"></div>
                 )}
 
                 <div className="p-4">
@@ -297,10 +297,10 @@ export const Settings: React.FC<SettingsProps> = ({
                             {/* 使用状态指示器 */}
                             {setting.id === llmContext.selectedSettingsId && (
                               <div
-                                className="w-2 h-2 bg-blue-500 rounded-full"
+                                className="w-2 h-2 bg-purple-500 rounded-full"
                                 title="当前使用中"
                               >
-                                <div className="w-full h-full bg-blue-600 rounded-full animate-ping"></div>
+                                <div className="w-full h-full bg-purple-600 rounded-full animate-ping"></div>
                               </div>
                             )}
                           </div>
@@ -351,9 +351,9 @@ export const Settings: React.FC<SettingsProps> = ({
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="p-1 bg-blue-100 rounded">
+                            <div className="p-1 bg-purple-100 rounded">
                               <svg
-                                className="w-3 h-3 text-blue-600"
+                                className="w-3 h-3 text-purple-600"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -422,7 +422,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       {setting.id !== llmContext.selectedSettingsId && (
                         <button
                           onClick={() => llmContext.selectSettings(setting.id)}
-                          className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+                          className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-xs font-medium rounded-md hover:from-purple-600 hover:to-purple-700 transition-all duration-200"
                           title="设为当前使用"
                         >
                           使用
@@ -565,7 +565,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 />
                 <div
                   className={`w-11 h-6 rounded-full transition-colors ${
-                    settings.enabled ? "bg-blue-600" : "bg-gray-200"
+                    settings.enabled ? "bg-purple-600" : "bg-gray-200"
                   }`}
                 >
                   <div
@@ -600,7 +600,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 <div
                   className={`w-11 h-6 rounded-full transition-colors ${
                     settings.autoPlay && settings.enabled
-                      ? "bg-blue-600"
+                      ? "bg-purple-600"
                       : "bg-gray-200"
                   } ${!settings.enabled ? "opacity-50" : ""}`}
                 >
@@ -643,9 +643,9 @@ export const Settings: React.FC<SettingsProps> = ({
                   disabled={!settings.enabled}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                     [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                    [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>慢 (0.5x)</span>
@@ -682,9 +682,9 @@ export const Settings: React.FC<SettingsProps> = ({
                   disabled={!settings.enabled}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                     [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                    [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>静音 (0%)</span>
@@ -729,9 +729,9 @@ export const Settings: React.FC<SettingsProps> = ({
                   }
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                     [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                    [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>透明 (0%)</span>
@@ -796,7 +796,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     />
                     <div
                       className={`w-11 h-6 rounded-full transition-colors ${
-                        keyboardSettings.enabled ? "bg-blue-600" : "bg-gray-200"
+                        keyboardSettings.enabled ? "bg-purple-600" : "bg-gray-200"
                       }`}
                     >
                       <div
@@ -831,7 +831,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       })
                     }
                     disabled={!keyboardSettings.enabled}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="mechanical">机械键盘</option>
                     <option value="soft">柔和声音</option>
@@ -869,9 +869,9 @@ export const Settings: React.FC<SettingsProps> = ({
                       disabled={!keyboardSettings.enabled}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
                         [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                         [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                        [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                        [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                     />
                     <div className="flex justify-between text-xs text-gray-400">
                       <span>静音 (0%)</span>
@@ -917,7 +917,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     soundType: "mechanical",
                   });
                 }}
-                className="w-full px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                className="w-full px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200"
               >
                 重置为默认设置
               </button>
@@ -963,7 +963,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left ${
                   activeTab === tab.id
-                    ? "bg-blue-100 text-blue-700"
+                    ? "bg-purple-100 text-purple-700"
                     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
@@ -1001,7 +1001,7 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="group">
                 {" "}
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
-                  <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                  <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
                   配置名称
                   <span className="text-red-500 text-xs">*</span>
                 </label>
@@ -1016,7 +1016,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       })
                     }
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
                              transition-all duration-200 group-hover:border-gray-300"
                     placeholder="例如：OpenAI GPT-3.5"
                   />
@@ -1057,7 +1057,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       })
                     }
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
                              transition-all duration-200 group-hover:border-gray-300"
                     placeholder="https://api.openai.com/v1"
                   />
@@ -1098,7 +1098,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       })
                     }
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
                              transition-all duration-200 group-hover:border-gray-300"
                     placeholder="sk-..."
                   />
@@ -1145,7 +1145,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       })
                     }
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 
+                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
                              transition-all duration-200 group-hover:border-gray-300"
                     placeholder="gpt-3.5-turbo"
                   />
@@ -1226,8 +1226,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
               <button
                 onClick={handleSaveLLMConfig}
-                className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 
-                         text-white text-sm font-medium rounded-xl hover:from-blue-600 hover:to-blue-700 
+                className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 
+                         text-white text-sm font-medium rounded-xl hover:from-purple-600 hover:to-purple-700 
                          transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <svg

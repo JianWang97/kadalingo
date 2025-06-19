@@ -10,6 +10,7 @@ import { Modal } from "../components/common";
 import { useFloatingMode } from "../hooks/useFloatingMode";
 import { Settings } from "../components/Settings";
 import { ProgressService } from "../services/progressService";
+import { MdInfoOutline, MdMenuBook } from "react-icons/md";
 
 interface SentencePracticeProps {
   selectedCourse?: Course | null;
@@ -514,7 +515,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
           <div className="text-gray-600">正在加载数据...</div>
         </div>
       </div>
@@ -531,7 +532,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           <div className="text-gray-500 text-sm">{error}</div>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-4 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
           >
             重试
           </button>
@@ -544,7 +545,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">📝</div>
           <div className="text-gray-600">
             {selectedCourse
               ? `课程"${selectedCourse.name}"暂无练习句子`
@@ -564,7 +564,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
-            <p className="text-lg font-medium text-blue-600">
+            <p className="text-lg font-medium text-purple-600">
               {score}/{attempts}{" "}
               <span className="text-sm text-gray-500">({accuracy}%)</span>
             </p>
@@ -579,7 +579,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             </button>
             <button
               onClick={goToNextLesson}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               {allLessons.length > 1 &&
               currentLessonIndex < allLessons.length - 1
@@ -630,7 +630,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   } rounded-md transition-colors ${
                     currentLessonIndex === 0
                       ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
                   }`}
                   title="上一节"
                 >
@@ -692,7 +692,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   } rounded-md transition-colors ${
                     currentLessonIndex === allLessons.length - 1
                       ? "text-gray-300 cursor-not-allowed"
-                      : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
                   }`}
                   title="下一节"
                 >
@@ -784,7 +784,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                             ? "border-b-red-400 text-red-700"
                             : wordResults[idx] === true
                             ? "border-b-green-400 text-green-700"
-                            : "border-b-gray-300 focus:border-b-blue-500 text-gray-800"
+                            : "border-b-gray-300 focus:border-b-purple-500 text-gray-800"
                         }`}
                         style={{
                           width: `${Math.max(
@@ -828,7 +828,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                       ? "text-green-600"
                       : isCorrect === false
                       ? "text-red-600"
-                      : "text-blue-600"
+                      : "text-purple-600"
                   } ${isFloating ? "drag-region" : ""}`}
                 >
                   {feedback}
@@ -881,7 +881,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
             {/* 右侧：准确率 */}
             <div className="text-center">
-              <div className="text-sm font-semibold text-blue-600">
+              <div className="text-sm font-semibold text-purple-600">
                 {accuracy}%
               </div>{" "}
               <div className="text-xs text-gray-500">准确率</div>
@@ -921,10 +921,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   <button
                     onClick={() => checkAnswer()}
                     disabled={wordInputs.some((input) => !input.trim())}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
+                    className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
                   >
                     <span>检查</span>{" "}
-                    <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
+                    <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
                       Enter
                     </span>
                   </button>
@@ -942,10 +942,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               {(isCorrect === true || showAnswer) && (
                 <button
                   onClick={nextSentence}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 no-drag"
+                  className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
                 >
                   <span>下一句</span>
-                  <span className="text-xs bg-blue-500 px-2 py-1 rounded text-blue-100">
+                  <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
                     Enter
                   </span>
                 </button>
