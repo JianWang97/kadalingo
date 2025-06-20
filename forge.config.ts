@@ -1,17 +1,25 @@
-import type { ForgeConfig } from '@electron-forge/shared-types';
-import { MakerZIP } from '@electron-forge/maker-zip';
-import { VitePlugin } from '@electron-forge/plugin-vite';
-import { FusesPlugin } from '@electron-forge/plugin-fuses';
-import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import type { ForgeConfig } from "@electron-forge/shared-types";
+import { MakerZIP } from "@electron-forge/maker-zip";
+import { VitePlugin } from "@electron-forge/plugin-vite";
+import { FusesPlugin } from "@electron-forge/plugin-fuses";
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    icon: './favicon', // Electron will automatically choose the right format (.ico for Windows, .icns for macOS, .png for Linux)
+    icon: "./favicon", // 统一使用相对路径，Electron 会自动选择正确格式
   },
   rebuildConfig: {},
   makers: [
-    new MakerZIP({}, ['darwin']),
+    new MakerSquirrel({
+      name: "kadalingo",
+      authors: "Wang Jian w415895535@outlook.com",
+      description: "kadalingo",
+      noMsi: true,
+      setupExe: "kadalingo-setup.exe",
+    }),
+    new MakerZIP({}, ["darwin"]),
   ],
   plugins: [
     new VitePlugin({
@@ -20,20 +28,20 @@ const config: ForgeConfig = {
       build: [
         {
           // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
-          entry: 'src/main/main.ts',
-          config: 'vite.main.config.ts',
-          target: 'main',
+          entry: "src/main/main.ts",
+          config: "vite.main.config.ts",
+          target: "main",
         },
         {
-          entry: 'src/main/preload.ts',
-          config: 'vite.preload.config.ts',
-          target: 'preload',
+          entry: "src/main/preload.ts",
+          config: "vite.preload.config.ts",
+          target: "preload",
         },
       ],
       renderer: [
         {
-          name: 'main_window',
-          config: 'vite.renderer.config.ts',
+          name: "main_window",
+          config: "vite.renderer.config.ts",
         },
       ],
     }),

@@ -48,7 +48,7 @@ function App() {
                   : "bg-gradient-to-br from-blue-50 to-indigo-100"
               }`}
             >              {/* 自定义顶部工具栏 - 固定在顶部 */}
-              <TitleBar title="咔哒" />
+              <TitleBar />
               
               {/* 主体内容区域 */}
               <div className="flex flex-1 overflow-hidden">
