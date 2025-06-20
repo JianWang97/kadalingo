@@ -7,7 +7,7 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    icon: './assets/titlebar', // Electron will automatically choose the right format (.ico for Windows, .icns for macOS, .png for Linux)
+    icon: './favicon', // Electron will automatically choose the right format (.ico for Windows, .icns for macOS, .png for Linux)
   },
   rebuildConfig: {},
   makers: [

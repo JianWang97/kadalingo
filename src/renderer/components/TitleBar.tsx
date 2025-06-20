@@ -64,9 +64,8 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "咔哒英语" }) => {
       )}
       
       {/* 左侧：应用图标和标题 */}
-      <div className="flex items-center gap-4 no-drag relative z-10">
-        <div className="titlebar-icon w-9 h-9 rounded-2xl flex items-center justify-center">
-          <img src="/assets/titlebar.ico" alt="App Icon" className="w-7 h-7 object-contain" />
+      <div className="flex items-center gap-4 no-drag relative z-10">        <div className="titlebar-icon w-9 h-9 rounded-2xl flex items-center justify-center">
+          <img src="/favicon.ico" alt="App Icon" className="w-7 h-7 object-contain" />
         </div>
         <div className="flex flex-col">
           <span className="titlebar-title text-base font-semibold text-on-surface leading-tight tracking-wide">{title}</span>
