@@ -21,7 +21,7 @@ interface SoundConfig {
 
 class KeyboardSoundService {
   private _settings: KeyboardSoundSettings = {
-    enabled: false,
+    enabled: true,
     volume: 0.3,
     soundType: "mechanical",
   };

@@ -1,8 +1,5 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerZIP } from '@electron-forge/maker-zip';
-import { MakerDeb } from '@electron-forge/maker-deb';
-import { MakerRpm } from '@electron-forge/maker-rpm';
-import MakerNSIS from 'electron-forge-maker-nsis';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
@@ -10,19 +7,11 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: './assets/titlebar', // Electron will automatically choose the right format (.ico for Windows, .icns for macOS, .png for Linux)
   },
   rebuildConfig: {},
   makers: [
-    new MakerNSIS({
-      // NSIS 配置选项
-      oneClick: false,
-      perMachine: false,
-      allowToChangeInstallationDirectory: true,
-      deleteAppDataOnUninstall: false,
-    }),
     new MakerZIP({}, ['darwin']),
-    new MakerRpm({}),
-    new MakerDeb({})
   ],
   plugins: [
     new VitePlugin({
@@ -31,12 +20,12 @@ const config: ForgeConfig = {
       build: [
         {
           // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
-          entry: 'src/main.ts',
+          entry: 'src/main/main.ts',
           config: 'vite.main.config.ts',
           target: 'main',
         },
         {
-          entry: 'src/preload.ts',
+          entry: 'src/main/preload.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { SentencePair, Course, Lesson } from "../data/types";
+import { SentencePair, Course, Lesson } from "../../data/types";
 import {
   RepositoryFactory,
   getStorageConfig,
-} from "../data/repositories/RepositoryFactory";
+} from "../../data/repositories/RepositoryFactory";
 import { useSpeech } from "../contexts/SpeechContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { Modal } from "../components/common";

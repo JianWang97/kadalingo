@@ -3,8 +3,8 @@ import type { GeneratedCourse, StreamChunk, PartialCourse } from "../services/ll
 import {
   RepositoryFactory,
   StorageType,
-} from "../data/repositories/RepositoryFactory";
-import type { Course, Lesson, SentencePair } from "../data/types";
+} from "../../data/repositories/RepositoryFactory";
+import type { Course, Lesson, SentencePair } from "../../data/types";
 
 interface StreamingCoursePreviewProps {
   generateConfig: {

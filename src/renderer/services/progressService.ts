@@ -1,5 +1,5 @@
-import { LearningProgress } from "../data/types";
-import { RepositoryFactory, getStorageConfig } from "../data/repositories/RepositoryFactory";
+import { LearningProgress } from "../../data/types";
+import { RepositoryFactory, getStorageConfig } from "../../data/repositories/RepositoryFactory";
 
 export class ProgressService {
   private static instance: ProgressService;

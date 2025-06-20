@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal } from "../components/common";
-import { Course } from "../data/types";
+import { Course } from "../../data/types";
 import {
   RepositoryFactory,
   getStorageConfig,
-} from "../data/repositories/RepositoryFactory";
+} from "../../data/repositories/RepositoryFactory";
 import { ProgressService } from "../services/progressService";
 import { MdChat, MdBusinessCenter, MdFlight, MdSchool } from "react-icons/md";
 
@@ -243,7 +243,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     );
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
       <div className="max-w-7xl mx-auto p-6">
         {/* 现代化标题区域 */}
         <div className="text-center mb-12">
