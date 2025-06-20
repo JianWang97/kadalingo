@@ -69,8 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onPageChange(item.id)}
-              className={`
+              onClick={() => onPageChange(item.id)}              className={`
                 w-full flex items-center rounded-xl
                 transition-all duration-300 ease-out
                 ${isExpanded ? "p-3" : "p-0"}
@@ -83,8 +82,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ? "sidebar-item-active"
                     : "sidebar-item"
                 }
-                focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-                dark:focus:ring-offset-surface-dark
               `}
               title={!isExpanded ? item.label : undefined}
               role="menuitem"
@@ -165,14 +162,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Settings Button */}{" "}
       <footer className={`${isExpanded ? "p-3" : "p-3"}`}>
         <button
-          onClick={onOpenSettings}
-          className={`
+          onClick={onOpenSettings}          className={`
             w-full flex items-center rounded-xl
             transition-all duration-300 ease-out
             ${isExpanded ? "p-3" : "p-1"}
             sidebar-item
-            focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-            dark:focus:ring-offset-surface-dark
           `}
           title={!isExpanded ? "设置" : undefined}
           role="menuitem"
