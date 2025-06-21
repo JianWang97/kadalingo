@@ -1,5 +1,5 @@
-import { Course, LearningProgress } from '../data/types';
-import { IDataRepository } from '../data/interfaces/dataRepository';
+import { Course, LearningProgress } from '../../data/types';
+import { IDataRepository } from '../../data/interfaces/dataRepository';
 
 // 课程统计服务
 export class CourseStatsService {

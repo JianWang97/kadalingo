@@ -1,6 +1,8 @@
 
+import { Course } from './types';
+
 // 示例课程数据
-export const sampleCourses: any[] = [
+export const sampleCourses: Course[] = [
   {
     id: 1,
     name: "英语日常对话入门",

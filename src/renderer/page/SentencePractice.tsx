@@ -424,67 +424,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           if (activeElement) {
             activeElement.blur();
           }
-        }
-      }
-    }
-  };
-  const checkAnswer = async () => {
-    if (!currentSentence) return;
-    const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
-    let allCorrect = true;
-    const results = wordInputs.map((input, idx) => {
-      const isWordCorrect =
-        input.trim().toLowerCase() === parsedTokens[idx]?.word.toLowerCase();
-      if (!isWordCorrect) allCorrect = false;
-      return isWordCorrect;
-    });
-    setWordResults(results);
-    setAttempts((prev) => prev + 1);
-
-    if (allCorrect) {
-      setIsCorrect(true);
-      setFeedback("全部单词正确！🎉");
-      setScore((prev) => prev + 1);
-
-      // 保存学习进度
-      if (currentCourse && currentLesson) {
-        const progressService = ProgressService.getInstance();
-        await progressService.markSentenceCompleted(
-          currentCourse.id,
-          currentLesson.id,
-          currentSentence.id,
-          true,
-          sentences.length
-        );
-      }
-    } else {
-      setIsCorrect(false);
-
-      // 对所有错误的单词添加抖动效果
-      const newShaking = Array(results.length).fill(false);
-      results.forEach((isCorrect, idx) => {
-        if (!isCorrect) {
-          newShaking[idx] = true;
-        }
-      });
-      setShakingInputs(newShaking);
-
-      // 500毫秒后移除抖动效果
-      setTimeout(() => {
-        setShakingInputs(Array(results.length).fill(false));
-      }, 500);
-
-      // 记录错误尝试
-      if (currentCourse && currentLesson) {
-        const progressService = ProgressService.getInstance();
-        await progressService.markSentenceCompleted(
-          currentCourse.id,
-          currentLesson.id,
-          currentSentence.id,
-          false,
-          sentences.length
-        );
-      }
+        }      }
     }
   };
   const showCorrectAnswer = async () => {
