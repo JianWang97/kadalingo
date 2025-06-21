@@ -45,7 +45,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [wordResults, setWordResults] = useState<(boolean | null)[]>([]);
   const [showHints, setShowHints] = useState<boolean[]>([]);
   const [shakingInputs, setShakingInputs] = useState<boolean[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 练习完成状态
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);  // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
   const [completedSentencesCount, setCompletedSentencesCount] = useState(0); // 已完成句子数量
 
@@ -144,9 +144,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         const isLessonCompleted = await progressService.isLessonCompleted(
           courseId,
           lessonId
-        );
-
-        if (isLessonCompleted) {
+        );        if (isLessonCompleted) {
           // 如果课时已完成，显示练习完成界面
           console.log("课时已完成，显示完成界面");
           setIsAllSentencesCompleted(true);
@@ -324,9 +322,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     }
     const availableSentences = sentences.filter(
       (sentence: SentencePair) => !usedSentences.includes(sentence.id)
-    );
-
-    let nextSentence: SentencePair;
+    );    let nextSentence: SentencePair;
     if (availableSentences.length === 0) {
       // 所有句子都练习完了
       setIsAllSentencesCompleted(true);
@@ -392,7 +388,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     idx: number
   ) => {
     if (e.key === " ") {
-      e.stopPropagation()
+      e.stopPropagation();
       e.preventDefault();
       playKeySound("space");
 
@@ -459,7 +455,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         if (allWordsCorrect) {
           // 所有单词都正确，设置整体状态
           setIsCorrect(true);
-          setFeedback("全部单词正确！🎉"); // 保存学习进度
+          setFeedback("进入下一句！🎉"); // 保存学习进度
           if (currentCourse && currentLesson) {
             const progressService = ProgressService.getInstance();
             progressService.markSentenceCompleted(
@@ -486,75 +482,73 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     if (!currentSentence) return;
 
     const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
-    const newShowHints = [...showHints];
 
-    // 获取当前焦点的输入框
+    // 获取当前焦点的输入框索引
     const activeElement = document.activeElement as HTMLInputElement;
-    let currentWordIndex = -1;
+    const currentWordIndex = activeElement?.hasAttribute("data-word-index")
+      ? parseInt(activeElement.getAttribute("data-word-index") || "-1")
+      : -1;
 
-    if (activeElement && activeElement.hasAttribute("data-word-index")) {
-      currentWordIndex = parseInt(
-        activeElement.getAttribute("data-word-index") || "-1"
-      );
-    }
+    // 找到需要提示的单词索引（优先当前焦点，然后是第一个错误的）
+    const targetWordIndex = findWordToShow(currentWordIndex, parsedTokens);
 
-    // 如果有当前聚焦的单词
-    if (currentWordIndex >= 0 && currentWordIndex < parsedTokens.length) {
-      const userWord = wordInputs[currentWordIndex]?.trim().toLowerCase() || "";
-      const correctWord =
-        parsedTokens[currentWordIndex]?.word.toLowerCase() || "";
-
-      // 如果当前单词为空或错误，显示当前单词的提示
-      if (userWord === "" || userWord !== correctWord) {
-        newShowHints[currentWordIndex] = true;
-        setShowHints(newShowHints);
-        return;
-      }
-    }
-
-    // 如果当前单词已正确或没有焦点，找到下一个需要填写的单词
-    let nextWordIndex = -1;
-
-    // 从当前位置之后开始查找
-    for (let i = currentWordIndex + 1; i < parsedTokens.length; i++) {
-      const userWord = wordInputs[i]?.trim().toLowerCase() || "";
-      const correctWord = parsedTokens[i]?.word.toLowerCase() || "";
-
-      if (userWord === "" || userWord !== correctWord) {
-        nextWordIndex = i;
-        break;
-      }
-    }
-
-    // 如果后面没找到，从头开始找
-    if (nextWordIndex === -1) {
-      for (let i = 0; i <= currentWordIndex; i++) {
-        const userWord = wordInputs[i]?.trim().toLowerCase() || "";
-        const correctWord = parsedTokens[i]?.word.toLowerCase() || "";
-
-        if (userWord === "" || userWord !== correctWord) {
-          nextWordIndex = i;
-          break;
-        }
-      }
-    }
-
-    // 显示找到的单词提示并聚焦到该输入框
-    if (nextWordIndex >= 0) {
-      newShowHints[nextWordIndex] = true;
-      setShowHints(newShowHints);
-
-      // 聚焦到该输入框
-      setTimeout(() => {
-        const targetInput = document.querySelector(
-          `input[data-word-index="${nextWordIndex}"]`
-        ) as HTMLInputElement;
-        if (targetInput) {
-          targetInput.focus();
-        }
-      }, 100);
+    if (targetWordIndex >= 0) {
+      showHintForWord(targetWordIndex, parsedTokens);
     }
   };
+  // 找到需要显示提示的单词
+  const findWordToShow = (
+    currentIndex: number,
+    tokens: { word: string; punctuation: string }[]
+  ) => {
+    // 检查当前单词是否需要提示
+    if (currentIndex >= 0 && currentIndex < tokens.length) {
+      const userWord = wordInputs[currentIndex]?.trim().toLowerCase() || "";
+      const correctWord = tokens[currentIndex]?.word.toLowerCase() || "";
+      if (userWord === "" || userWord !== correctWord) {
+        return currentIndex;
+      }
+    }
+
+    // 找第一个需要填写或错误的单词
+    for (let i = 0; i < tokens.length; i++) {
+      const userWord = wordInputs[i]?.trim().toLowerCase() || "";
+      const correctWord = tokens[i]?.word.toLowerCase() || "";
+      if (userWord === "" || userWord !== correctWord) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
+  // 为指定单词显示提示
+  const showHintForWord = (
+    wordIndex: number,
+    tokens: { word: string; punctuation: string }[]
+  ) => {
+    // 显示提示
+    const newShowHints = [...showHints];
+    newShowHints[wordIndex] = true;
+    setShowHints(newShowHints);
+
+    // 播放声音和读音
+    playKeySound("enter");
+    if (!isPlaying) {
+      speakEnglish(tokens[wordIndex]?.word || "");
+    }
+
+    // 聚焦到该输入框
+    setTimeout(() => {
+      const targetInput = document.querySelector(
+        `input[data-word-index="${wordIndex}"]`
+      ) as HTMLInputElement;
+      if (targetInput) {
+        targetInput.focus();
+      }
+    }, 100);
+  };
+
   const nextSentence = () => {
     loadNextSentence();
   };
@@ -578,9 +572,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     setCompletedSentencesCount(0);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
-  };
-
-  // 切换到下一课时
+  };  // 切换到下一课时
   const goToNextLesson = async () => {
     if (allLessons.length === 0) {
       // 如果没有课程数据，就使用原来的重新开始逻辑
@@ -695,34 +687,36 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         className={`h-full flex items-center justify-center bg-gray-50 ${
           isFloating ? "floating-mode-content drag-region" : ""
         }`}
-      >
-        <div className="text-center max-w-sm mx-auto px-6">
+      >        <div className="text-center max-w-sm mx-auto px-6">
           <div className="text-5xl mb-6">🎉</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">
+            {currentLessonIndex === allLessons.length - 1 ? "课程全部完成！" : "练习完成"}
+          </h2>
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
-          </div>{" "}
-          <div className="flex gap-3 justify-center">
+            {currentLessonIndex === allLessons.length - 1 && allLessons.length > 1 && (
+              <p className="text-green-600 font-medium">
+                🌟 恭喜您完成了全部 {allLessons.length} 个课时！
+              </p>
+            )}
+          </div>{" "}          <div className="flex gap-3 justify-center">
             <button
               onClick={() => restartPractice().catch(console.error)}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-drag"
             >
               再练一遍
             </button>
-            <button
-              onClick={goToNextLesson}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
-            >
-              <span>
-                {allLessons.length > 1 &&
-                currentLessonIndex < allLessons.length - 1
-                  ? "下一节"
-                  : "继续练习"}
-              </span>
-              <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
-                空格
-              </span>
-            </button>
+            {currentLessonIndex < allLessons.length - 1 && (
+              <button
+                onClick={goToNextLesson}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
+              >
+                <span>下一节</span>
+                <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
+                  空格
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -894,9 +888,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   {getDifficultyText(currentSentence.difficulty)}
                 </div>
               )}
-            </div>
-            {/* 输入框区域 */}
-            <div className={`mb-8 ${isFloating ? "drag-region" : ""}`}>
+            </div>            {/* 输入框区域 */}
+            <div className={`mb-8 ${isFloating ? "drag-region" : ""} relative`}>
               <div
                 className={`flex flex-wrap gap-2 justify-center items-baseline w-full ${
                   isFloating ? "drag-region" : ""
@@ -906,12 +899,19 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 {parseWordsAndPunctuation(currentSentence.english).map(
                   (token, idx) => (
                     <div key={idx} className="relative flex items-baseline">
+                      {" "}
                       {/* 提示显示区域 - 使用绝对定位不占用布局空间 */}
                       {showHints[idx] && (
                         <div
                           className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 ${
-                            isFloating ? "text-xs" : "text-sm"
-                          } text-blue-600 font-medium bg-white px-2 py-1 rounded shadow-sm border border-blue-200 whitespace-nowrap z-10`}
+                            isFloating ? "text-sm" : "text-base"
+                          } text-purple-700 font-semibold bg-purple-50 px-3 py-1.5 rounded-lg shadow-sm border border-purple-200 whitespace-nowrap z-10`}
+                          style={{
+                            animation: "hint-appear 0.3s ease-out forwards",
+                            fontFamily:
+                              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                            letterSpacing: "0.025em",
+                          }}
                         >
                           {token.word}
                         </div>
@@ -962,27 +962,36 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   )
                 )}
               </div>
-            </div>
-            {/* 反馈信息 */}
-            {feedback && (
-              <div
-                className={`text-center mb-6 ${
-                  isFloating ? "drag-region" : ""
-                }`}
-              >
-                <p
-                  className={`text-sm ${
-                    isCorrect === true
-                      ? "text-green-600"
-                      : isCorrect === false
-                      ? "text-red-600"
-                      : "text-purple-600"
-                  } ${isFloating ? "drag-region" : ""}`}
+              
+              {/* 反馈信息 - 固定在输入框下方，类似toast */}
+              {feedback && (
+                <div
+                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 z-20"
+                  style={{
+                    animation: "hint-appear 0.3s ease-out forwards",
+                  }}
                 >
-                  {feedback}
-                </p>{" "}
-              </div>
-            )}
+                  <div
+                    className={`${
+                      isFloating ? "text-sm" : "text-base"
+                    } font-medium px-4 py-2 rounded-lg shadow-lg border whitespace-nowrap ${
+                      isCorrect === true
+                        ? "text-green-700 bg-green-50 border-green-200"
+                        : isCorrect === false
+                        ? "text-red-700 bg-red-50 border-red-200"
+                        : "text-purple-700 bg-purple-50 border-purple-200"
+                    }`}
+                    style={{
+                      fontFamily:
+                        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      letterSpacing: "0.025em",
+                    }}
+                  >
+                    {feedback}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 设置模态框 */}
