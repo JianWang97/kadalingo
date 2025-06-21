@@ -10,7 +10,6 @@ import { Modal } from "../components/common";
 import { useFloatingMode } from "../hooks/useFloatingMode";
 import { Settings } from "../components/Settings";
 import { ProgressService } from "../services/progressService";
-import { MdInfoOutline, MdMenuBook } from "react-icons/md";
 
 interface SentencePracticeProps {
   selectedCourse?: Course | null;
@@ -44,10 +43,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState<string>("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [usedSentences, setUsedSentences] = useState<number[]>([]);
   const [wordInputs, setWordInputs] = useState<string[]>([]);
   const [wordResults, setWordResults] = useState<(boolean | null)[]>([]);
+  const [showHints, setShowHints] = useState<boolean[]>([]);
+  const [shakingInputs, setShakingInputs] = useState<boolean[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
 
@@ -198,12 +198,13 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
     });
   };
-
   useEffect(() => {
     if (currentSentence) {
       const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
       setWordInputs(Array(parsedTokens.length).fill(""));
       setWordResults(Array(parsedTokens.length).fill(null));
+      setShowHints(Array(parsedTokens.length).fill(false));
+      setShakingInputs(Array(parsedTokens.length).fill(false));
 
       // 自动聚焦到第一个输入框
       setTimeout(() => {
@@ -216,32 +217,30 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }, 100);
     }
     // eslint-disable-next-line
-  }, [currentSentence]);
-  // 全局键盘监听
+  }, [currentSentence]); // 全局键盘监听  // 全局键盘监听
   useEffect(() => {
     const handleGlobalKeyPress = async (e: KeyboardEvent) => {
-      // Enter键 - 下一句
-      if (e.key === "Enter" && (isCorrect === true || showAnswer)) {
+      // 空格键 - 完成后下一句（但要排除输入框内的空格键）
+      if (e.key === " " && isCorrect === true) {
         e.preventDefault();
         nextSentence();
       }
-
-      // Ctrl + ' - 播放英文发音
-      if (e.ctrlKey && e.key === "'") {
+      // Ctrl + ' 或 Ctrl + Quote 或 Ctrl + P - 播放英文发音
+      if (
+        e.ctrlKey &&
+        (e.key === "'" ||
+          e.key === "Quote" ||
+          e.code === "Quote" ||
+          e.key === "p")
+      ) {
         e.preventDefault();
         handleSpeakEnglish();
-      }
-
-      // Ctrl + M - 检查答案
-      if (e.ctrlKey && e.key === "m" && isCorrect !== true && !showAnswer) {
-        e.preventDefault();
-        if (!wordInputs.some((input) => !input.trim())) {
-          await checkAnswer();
-        }
-      }
-
-      // Ctrl + N - 显示答案
-      if (e.ctrlKey && e.key === "n" && isCorrect !== true && !showAnswer) {
+      } // Ctrl + H - 显示答案 (Help的意思，避免与浏览器快捷键冲突)
+      if (
+        e.ctrlKey &&
+        e.key === "h" &&
+        (isCorrect === null || isCorrect === false)
+      ) {
         e.preventDefault();
         showCorrectAnswer().catch(console.error);
       }
@@ -258,7 +257,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     return () => {
       document.removeEventListener("keydown", handleGlobalKeyPress);
     };
-  }, [isCorrect, showAnswer, wordInputs]);
+  }, [isCorrect, wordInputs]);
   // 处理播放英文的函数
   const handleSpeakEnglish = () => {
     if (currentSentence) {
@@ -288,7 +287,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     }
     setFeedback("");
     setIsCorrect(null);
-    setShowAnswer(false);
+    setShowHints(
+      Array(parseWordsAndPunctuation(nextSentence.english).length).fill(false)
+    );
 
     // 自动播放英文（延迟一点时间让UI更新完成）
     if (speechSettings.autoPlay && nextSentence) {
@@ -314,26 +315,40 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       playKeySound("normal");
     }
 
+    // 当用户开始输入时，隐藏当前单词的提示
+    if (showHints[idx]) {
+      setShowHints((prev) => {
+        const newHints = [...prev];
+        newHints[idx] = false;
+        return newHints;
+      });
+    }
+
+    // 更新输入状态
     setWordInputs((inputs) => {
       const newInputs = [...inputs];
       newInputs[idx] = value;
       return newInputs;
-    });
+    }); // 移除实时校验逻辑，只在按空格键时进行校验
+    // 这里只更新输入状态，不进行任何校验
   };
-  const handleKeyPress = async (
+  const handleKeyDown = async (
     e: React.KeyboardEvent<HTMLInputElement>,
     idx: number
   ) => {
     if (e.key === " ") {
       e.preventDefault();
       playKeySound("space");
-      checkSingleWord(idx);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      playKeySound("enter");
-      // 只在未完成时检查答案，完成后由全局监听处理
-      if (isCorrect !== true && !showAnswer) {
-        await checkAnswer();
+
+      // 如果已经完成，直接进入下一句
+      if (isCorrect === true) {
+        nextSentence();
+        return;
+      }
+
+      // 如果是最后一个单词，按空格键检查整个句子
+      if (currentSentence) {
+        checkSingleWord(idx);
       }
     }
   };
@@ -344,21 +359,72 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     const userWord = wordInputs[idx]?.trim().toLowerCase();
     const correctWord = parsedTokens[idx]?.word.toLowerCase();
 
-    const isCorrect = userWord === correctWord;
-
+    const isWordCorrect = userWord === correctWord;
     setWordResults((prev) => {
       const newResults = [...prev];
-      newResults[idx] = isCorrect;
+      newResults[idx] = isWordCorrect;
       return newResults;
     });
 
-    if (isCorrect && idx < parsedTokens.length - 1) {
-      // 如果正确且不是最后一个单词，跳转到下一个输入框
-      const nextInput = document.querySelector(
-        `input[data-word-index="${idx + 1}"]`
-      ) as HTMLInputElement;
-      if (nextInput) {
-        nextInput.focus();
+    // 如果单词错误，添加抖动效果
+    if (!isWordCorrect) {
+      setShakingInputs((prev) => {
+        const newShaking = [...prev];
+        newShaking[idx] = true;
+        return newShaking;
+      });
+
+      // 500毫秒后移除抖动效果
+      setTimeout(() => {
+        setShakingInputs((prev) => {
+          const newShaking = [...prev];
+          newShaking[idx] = false;
+          return newShaking;
+        });
+      }, 500);
+    } else {
+      // 单词正确的情况
+      if (idx < parsedTokens.length - 1) {
+        // 如果不是最后一个单词，跳转到下一个输入框
+        const nextInput = document.querySelector(
+          `input[data-word-index="${idx + 1}"]`
+        ) as HTMLInputElement;
+        if (nextInput) {
+          nextInput.focus();
+        }
+      } else {
+        // 如果是最后一个单词，检查整句是否都正确
+        const allWordsCorrect = wordInputs.every((input, index) => {
+          return (
+            input.trim().toLowerCase() ===
+            parsedTokens[index]?.word.toLowerCase()
+          );
+        });        if (allWordsCorrect) {
+          // 所有单词都正确，设置整体状态
+          setIsCorrect(true);
+          setFeedback("全部单词正确！🎉");
+          setScore((prev) => prev + 1);
+          setAttempts((prev) => prev + 1);
+
+          // 保存学习进度
+          if (currentCourse && currentLesson) {
+            const progressService = ProgressService.getInstance();
+            progressService.markSentenceCompleted(
+              currentCourse.id,
+              currentLesson.id,
+              currentSentence.id,
+              true,
+              sentences.length
+            );
+          }
+
+          // 不自动进入下一句，等待用户手动操作
+          // 移除焦点以避免继续输入
+          const activeElement = document.activeElement as HTMLInputElement;
+          if (activeElement) {
+            activeElement.blur();
+          }
+        }
       }
     }
   };
@@ -393,7 +459,20 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
     } else {
       setIsCorrect(false);
-      setFeedback("有单词不正确，请检查红色单词");
+
+      // 对所有错误的单词添加抖动效果
+      const newShaking = Array(results.length).fill(false);
+      results.forEach((isCorrect, idx) => {
+        if (!isCorrect) {
+          newShaking[idx] = true;
+        }
+      });
+      setShakingInputs(newShaking);
+
+      // 500毫秒后移除抖动效果
+      setTimeout(() => {
+        setShakingInputs(Array(results.length).fill(false));
+      }, 500);
 
       // 记录错误尝试
       if (currentCourse && currentLesson) {
@@ -409,27 +488,79 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     }
   };
   const showCorrectAnswer = async () => {
-    setShowAnswer(true);
-    setFeedback(`正确答案：${currentSentence?.english}`);
-    if (currentSentence) {
-      const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
-      const correctWords = parsedTokens.map((token) => token.word);
-      setWordInputs(correctWords);
-      setWordResults(Array(correctWords.length).fill(true));
+    if (!currentSentence) return;
 
-      // 当显示答案时，也记录为完成状态（但标记为不正确）
-      if (currentCourse && currentLesson) {
-        const progressService = ProgressService.getInstance();
-        await progressService.markSentenceCompleted(
-          currentCourse.id,
-          currentLesson.id,
-          currentSentence.id,
-          false, // 标记为不正确，因为是通过显示答案完成的
-          sentences.length
-        );
+    const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
+    const newShowHints = [...showHints];
+
+    // 获取当前焦点的输入框
+    const activeElement = document.activeElement as HTMLInputElement;
+    let currentWordIndex = -1;
+
+    if (activeElement && activeElement.hasAttribute("data-word-index")) {
+      currentWordIndex = parseInt(
+        activeElement.getAttribute("data-word-index") || "-1"
+      );
+    }
+
+    // 如果有当前聚焦的单词
+    if (currentWordIndex >= 0 && currentWordIndex < parsedTokens.length) {
+      const userWord = wordInputs[currentWordIndex]?.trim().toLowerCase() || "";
+      const correctWord =
+        parsedTokens[currentWordIndex]?.word.toLowerCase() || "";
+
+      // 如果当前单词为空或错误，显示当前单词的提示
+      if (userWord === "" || userWord !== correctWord) {
+        newShowHints[currentWordIndex] = true;
+        setShowHints(newShowHints);
+        return;
       }
     }
+
+    // 如果当前单词已正确或没有焦点，找到下一个需要填写的单词
+    let nextWordIndex = -1;
+
+    // 从当前位置之后开始查找
+    for (let i = currentWordIndex + 1; i < parsedTokens.length; i++) {
+      const userWord = wordInputs[i]?.trim().toLowerCase() || "";
+      const correctWord = parsedTokens[i]?.word.toLowerCase() || "";
+
+      if (userWord === "" || userWord !== correctWord) {
+        nextWordIndex = i;
+        break;
+      }
+    }
+
+    // 如果后面没找到，从头开始找
+    if (nextWordIndex === -1) {
+      for (let i = 0; i <= currentWordIndex; i++) {
+        const userWord = wordInputs[i]?.trim().toLowerCase() || "";
+        const correctWord = parsedTokens[i]?.word.toLowerCase() || "";
+
+        if (userWord === "" || userWord !== correctWord) {
+          nextWordIndex = i;
+          break;
+        }
+      }
+    }
+
+    // 显示找到的单词提示并聚焦到该输入框
+    if (nextWordIndex >= 0) {
+      newShowHints[nextWordIndex] = true;
+      setShowHints(newShowHints);
+
+      // 聚焦到该输入框
+      setTimeout(() => {
+        const targetInput = document.querySelector(
+          `input[data-word-index="${nextWordIndex}"]`
+        ) as HTMLInputElement;
+        if (targetInput) {
+          targetInput.focus();
+        }
+      }, 100);
+    }
   };
+
   const nextSentence = () => {
     loadNextSentence();
   };
@@ -487,7 +618,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       default:
         return "未知";
     }
-  };  // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
+  }; // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
   useEffect(() => {
     const handleFloatingHotkey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "P" || e.key === "p")) {
@@ -764,20 +895,31 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   isFloating ? "drag-region" : ""
                 }`}
               >
+                {" "}
                 {parseWordsAndPunctuation(currentSentence.english).map(
                   (token, idx) => (
-                    <div key={idx} className="flex items-baseline">
+                    <div key={idx} className="relative flex items-baseline">
+                      {/* 提示显示区域 - 使用绝对定位不占用布局空间 */}
+                      {showHints[idx] && (
+                        <div
+                          className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 ${
+                            isFloating ? "text-xs" : "text-sm"
+                          } text-blue-600 font-medium bg-white px-2 py-1 rounded shadow-sm border border-blue-200 whitespace-nowrap z-10`}
+                        >
+                          {token.word}
+                        </div>
+                      )}{" "}
                       <input
                         type="text"
                         value={wordInputs[idx] || ""}
                         onChange={(e) => handleWordInput(idx, e.target.value)}
-                        onKeyPress={(e) => handleKeyPress(e, idx)}
+                        onKeyDown={(e) => handleKeyDown(e, idx)}
                         data-word-index={idx}
                         className={`px-2 py-1 text-center ${
                           isFloating ? "text-lg" : "text-2xl"
                         } font-bold bg-transparent border-0 border-b-2 focus:outline-none transition-colors no-drag ${
                           isFloating ? "floating-mode-text" : ""
-                        }
+                        } ${shakingInputs[idx] ? "shake-animation" : ""}
                         ${
                           wordResults[idx] === false
                             ? "border-b-red-400 text-red-700"
@@ -793,8 +935,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                           fontFamily:
                             '"Microsoft YaHei", "微软雅黑", sans-serif',
                         }}
-                        disabled={isCorrect === true || showAnswer}
-                        placeholder={showAnswer ? token.word : ""}
+                        disabled={isCorrect === true}
+                        placeholder=""
                       />
                       {token.punctuation && (
                         <span
@@ -909,46 +1051,38 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
-                </svg>
+                </svg>{" "}
                 <span>播放</span>{" "}
                 <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                  Ctrl+'
+                  Ctrl+P
                 </span>
-              </button>
-              {isCorrect !== true && !showAnswer && (
+              </button>{" "}
+              {(isCorrect === null || isCorrect === false) && (
                 <>
-                  <button
-                    onClick={() => checkAnswer()}
-                    disabled={wordInputs.some((input) => !input.trim())}
-                    className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:bg-gray-300 transition-colors flex items-center gap-2 no-drag"
-                  >
-                    <span>检查</span>{" "}
-                    <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
-                      Enter
-                    </span>
-                  </button>
                   <button
                     onClick={() => showCorrectAnswer().catch(console.error)}
                     className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                   >
+                    {" "}
                     <span>显示答案</span>
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                      Ctrl+N
+                      Ctrl+H
                     </span>
                   </button>
                 </>
-              )}
-              {(isCorrect === true || showAnswer) && (
+              )}{" "}
+              {isCorrect === true && (
                 <button
                   onClick={nextSentence}
                   className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
                 >
                   <span>下一句</span>
                   <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
-                    Enter
+                    空格
                   </span>
                 </button>
-              )}              {window.electronAPI?.toggleFloatingMode && (
+              )}{" "}
+              {window.electronAPI?.toggleFloatingMode && (
                 <button
                   onClick={() => window.electronAPI?.toggleFloatingMode?.()}
                   className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
