@@ -15,9 +15,10 @@ on:
 jobs:
   release:
     runs-on: windows-latest  # 使用 Windows 环境构建 exe 文件
-    
     permissions:
       contents: write  # 需要写权限来创建 release
+      actions: read    # 读取actions权限
+      metadata: read   # 读取元数据权限
     
     steps:
       - name: Checkout code
@@ -48,12 +49,12 @@ jobs:
             echo "version=$version" >> $env:GITHUB_OUTPUT
             echo "tag_name=$tag_name" >> $env:GITHUB_OUTPUT
             echo "Manual trigger with version: $tag_name"
-          } else {
+          } else {            
             $version = "${{ github.ref_name }}" -replace '^v', ''
             echo "version=$version" >> $env:GITHUB_OUTPUT
             echo "tag_name=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
-            echo "Tag trigger with version: ${{ github.ref_name }}"          }
-      
+            echo "Tag trigger with version: ${{ github.ref_name }}"
+          }
       - name: Create tag for manual trigger
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -61,12 +62,15 @@ jobs:
           git config --local user.name "GitHub Action"
           git tag ${{ steps.get_version.outputs.tag_name }}
           git push origin ${{ steps.get_version.outputs.tag_name }}
-      
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.tag_name }}
           name: 咔哒 ${{ steps.get_version.outputs.tag_name }} - 语言学习句子练习工具
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
           body: |
             🚀 **咔哒语言学习工具** ${{ steps.get_version.outputs.tag_name }} 版本发布
             
@@ -85,10 +89,9 @@ jobs:
             1. 下载对应的安装包
             2. 运行安装程序并按照提示安装
             3. 启动应用开始语言学习之旅
-            
-            如有问题，请访问 [项目主页](https://github.com/JianWang6/kadalingo) 或提交 [Issue](https://github.com/JianWang6/kadalingo/issues)。
-          files: |
-            build/*.exe
+
+            如有问题，请访问 [项目主页](https://github.com/JianWang97/kadalingo) 或提交 [Issue](https://github.com/JianWang97/kadalingo/issues)。
+          files: build/*.exe
           draft: false
           prerelease: false
           make_latest: true

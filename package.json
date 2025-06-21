@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "description": "🚀 咔哒 - 一个用于语言学习的句子练习工具",
   "main": "dist/main.js",
-  "homepage": "https://github.com/JianWang6/kadalingo",
+  "homepage": "https://github.com/JianWang97/kadalingo",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JianWang6/kadalingo.git"
+    "url": "https://github.com/JianWang97/kadalingo.git"
   },
   "bugs": {
-    "url": "https://github.com/JianWang6/kadalingo/issues"
+    "url": "https://github.com/JianWang97/kadalingo/issues"
   },
   "scripts": {
     "start": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
@@ -48,7 +48,7 @@
     "typescript"
   ],
   "author": {
-    "name": "JianWang6",
+    "name": "JianWang97",
     "email": "w415895535@outlook.com"
   },
   "devDependencies": {
@@ -194,7 +194,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "JianWang6",
+      "owner": "JianWang97",
       "repo": "kadalingo"
     }
   }
