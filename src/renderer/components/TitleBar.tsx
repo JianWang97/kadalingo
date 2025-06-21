@@ -68,8 +68,6 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
       {/* 左侧：应用图标和标题 */}
       <div className="flex items-center gap-4 no-drag relative z-10">
         {" "}
-        <div className="titlebar-icon w-9 h-9 rounded-2xl flex items-center justify-center">
-        </div>
         <div className="flex flex-col">
           <span className="titlebar-title text-base font-semibold text-on-surface leading-tight tracking-wide">
             {title}
