@@ -4,16 +4,15 @@
 
 ## 功能特色
 
-- 📝 **句子翻译练习** - 中英文互译，支持填空和完整翻译模式
+- 📝 **句子翻译练习** - 中英文互译
 - 🔊 **语音合成** - TTS语音播放功能
-- 📊 **学习统计** - 进度跟踪和成绩分析
 - 🎨 **Material Design 3** - 现代化界面设计
 - 💾 **本地存储** - 基于 IndexedDB 的离线数据存储
 
 ## 技术栈
 
 - Electron + React + TypeScript
-- Vite + Electron Forge
+- Vite 
 - Tailwind CSS
 - IndexedDB (Dexie)
 
