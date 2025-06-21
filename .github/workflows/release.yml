@@ -18,7 +18,6 @@ jobs:
     permissions:
       contents: write  # 需要写权限来创建 release
       actions: read    # 读取actions权限
-      metadata: read   # 读取元数据权限
     
     steps:
       - name: Checkout code
