@@ -3,7 +3,7 @@
   "productName": "咔哒",
   "version": "1.0.0",
   "description": "🚀 咔哒 - 一个用于语言学习的句子练习工具",
-  "main": ".vite/build/main.js",
+  "main": "dist/main.js",
   "homepage": "https://github.com/JianWang6/kadalingo",
   "repository": {
     "type": "git",
@@ -13,19 +13,29 @@
     "url": "https://github.com/JianWang6/kadalingo/issues"
   },
   "scripts": {
-    "start": "electron-forge start",
-    "dev": "electron-forge start",
-    "build": "electron-forge make",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "start": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+    "dev:renderer": "vite --config vite.renderer.config.ts",
+    "dev:main": "npm run build:main:dev && npm run build:preload:dev && wait-on http://localhost:5173 && cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 electron dist/main.js",
+    "build": "npm run build:prod && electron-builder",
+    "build:dev": "npm run build:main:dev && npm run build:preload:dev && npm run build:renderer:dev",
+    "build:prod": "npm run build:main:prod && npm run build:preload:prod && npm run build:renderer:prod",
+    "build:main:dev": "vite build --config vite.main.config.ts --mode development",
+    "build:main:prod": "vite build --config vite.main.config.ts",
+    "build:preload:dev": "vite build --config vite.preload.config.ts --mode development",
+    "build:preload:prod": "vite build --config vite.preload.config.ts",
+    "build:renderer:dev": "vite build --config vite.renderer.config.ts --mode development",
+    "build:renderer:prod": "vite build --config vite.renderer.config.ts",
+    "dist": "npm run build:prod && electron-builder",
+    "dist:dir": "npm run build:prod && electron-builder --dir",
+    "pack": "npm run build:prod && electron-builder --dir",
     "web:dev": "vite --config vite.web.config.ts",
     "web:build": "vite build --config vite.web.config.ts",
     "web:preview": "vite preview --config vite.web.config.ts",
     "lint": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --ext .ts,.tsx . --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rimraf out .vite dist-web"
+    "clean": "rimraf out .vite dist-web dist build"
   },
   "keywords": [
     "english",
@@ -41,24 +51,17 @@
     "name": "JianWang6",
     "email": "w415895535@outlook.com"
   },
-  "license": "MIT",
   "devDependencies": {
-    "@electron-forge/cli": "^7.8.1",
-    "@electron-forge/maker-deb": "^7.8.1",
-    "@electron-forge/maker-rpm": "^7.8.1",
-    "@electron-forge/maker-squirrel": "^7.8.1",
-    "@electron-forge/maker-zip": "^7.8.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
-    "@electron-forge/plugin-fuses": "^7.8.1",
-    "@electron-forge/plugin-vite": "^7.8.1",
-    "@electron/fuses": "^1.8.0",
+    "electron-builder": "^25.1.8",
+    "concurrently": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "wait-on": "^8.0.1",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.5.1",
-    "electron-forge-maker-nsis": "^26.0.12",
     "autoprefixer": "^10.4.21",
     "electron": "^32.0.0",
     "eslint": "^8.57.1",
@@ -71,10 +74,128 @@
   },
   "dependencies": {
     "dexie": "^4.0.11",
-
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.3.0",
     "scheduler": "^0.26.0"
+  },
+  "build": {
+    "appId": "com.kadalingo.app",
+    "productName": "kadalingo",
+    "directories": {
+      "output": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "icon": "assets/favicon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/favicon.icns",
+      "category": "public.app-category.education"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/favicon.png",
+      "category": "Education"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "assets/favicon.ico",
+      "uninstallerIcon": "assets/favicon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "kadalingo",
+      "menuCategory": "教育",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "perMachine": false,
+      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "displayLanguageSelector": true,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "language": "2052"
+    },
+    "dmg": {
+      "title": "kadalingo-${version}",
+      "background": "assets/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "JianWang6",
+      "repo": "kadalingo"
+    }
   }
 }

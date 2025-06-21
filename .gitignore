@@ -94,4 +94,11 @@ out/
 
 dist-web/
 
+build/
+
+dist/
+
+dist-web/
+
 .npmrc
+

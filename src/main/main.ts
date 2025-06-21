@@ -95,7 +95,7 @@ const createWindow = () => {
     width: 1280,
     height: 720,
     title: '咔哒英语', // 设置窗口标题
-    icon: path.join(__dirname, '../../assets/titlebar.ico'), // 设置窗口图标
+    icon: path.join(__dirname, '../../assets/favicon.ico'), // 设置窗口图标
     frame: false, // 隐藏窗口边框和工具栏
     transparent: true, // 启用透明背景支持
     backgroundColor: '#00000000', // 设置完全透明的背景色
@@ -109,12 +109,14 @@ const createWindow = () => {
     },
   });
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  // 在开发模式下使用开发服务器，在生产模式下加载本地文件
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  if (isDev && process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
   }
-
 
   // 在生产环境下不打开开发工具，避免影响透明度
   // mainWindow.webContents.openDevTools();
