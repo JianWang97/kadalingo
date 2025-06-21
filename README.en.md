@@ -34,5 +34,4 @@ npm start
 - Change window: Edit `BrowserWindow` in `src/main.ts`
 
 ## License
-
-MIT License
+GPL-3.0 License
