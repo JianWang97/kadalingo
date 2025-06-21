@@ -112,8 +112,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     };
 
     initializeCourse();
-  }, [selectedCourse]); // 依赖selectedCourse，当课程改变时重新加载
-  // 加载指定课时的句子
+  }, [selectedCourse]); // 依赖selectedCourse，当课程改变时重新加载  // 加载指定课时的句子
   const loadLessonSentences = async (courseId: number, lessonId: number) => {
     try {
       const factory = RepositoryFactory.getInstance();
@@ -138,13 +137,26 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       if (progress && progress.completedSentences.length > 0) {
         // 如果有进度，设置已使用的句子
         setUsedSentences(progress.completedSentences);
+
+        // 检查课时是否已完成
+        const isLessonCompleted = await progressService.isLessonCompleted(
+          courseId,
+          lessonId
+        );
+
+        if (isLessonCompleted) {
+          // 如果课时已完成，显示练习完成界面
+          setIsAllSentencesCompleted(true);
+        } else {
+          setIsAllSentencesCompleted(false);
+        }
       } else {
         // 重置练习状态
         setUsedSentences([]);
+        setIsAllSentencesCompleted(false);
       }
 
       setCurrentSentence(null);
-      setIsAllSentencesCompleted(false);
     } catch (err) {
       console.error("Failed to load lesson sentences:", err);
       setError(
@@ -222,6 +234,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         e.preventDefault();
         nextSentence();
       }
+      // 空格键 - 练习完成后进入下一节
+      if (e.key === " " && isAllSentencesCompleted) {
+        e.preventDefault();
+        goToNextLesson();
+      }
       // Ctrl + ' 或 Ctrl + Quote 或 Ctrl + P - 播放英文发音
       if (
         e.ctrlKey &&
@@ -250,11 +267,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     };
 
     document.addEventListener("keydown", handleGlobalKeyPress);
-
     return () => {
       document.removeEventListener("keydown", handleGlobalKeyPress);
     };
-  }, [isCorrect, wordInputs]);
+  }, [isCorrect, wordInputs, isAllSentencesCompleted]);
   // 处理播放英文的函数
   const handleSpeakEnglish = () => {
     if (currentSentence) {
@@ -396,7 +412,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             input.trim().toLowerCase() ===
             parsedTokens[index]?.word.toLowerCase()
           );
-        });        if (allWordsCorrect) {
+        });
+        if (allWordsCorrect) {
           // 所有单词都正确，设置整体状态
           setIsCorrect(true);
           setFeedback("全部单词正确！🎉");
@@ -419,7 +436,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           if (activeElement) {
             activeElement.blur();
           }
-        }}
+        }
+      }
     }
   };
   const showCorrectAnswer = async () => {
@@ -533,7 +551,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         await loadLessonSentences(selectedCourse.id, allLessons[0].id);
       }
     }
-  };  const resetGame = () => {
+  };
+  const resetGame = () => {
     setUsedSentences([]);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
@@ -614,33 +633,38 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           </div>
         </div>
       </div>
-    );  }
+    );
+  }
   // 练习完成显示
   if (isAllSentencesCompleted) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
+      <div className={`h-full flex items-center justify-center bg-gray-50 ${isFloating ? "floating-mode-content" : ""}`}>
         <div className="text-center max-w-sm mx-auto px-6">
           <div className="text-5xl mb-6">🎉</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
-          </div>
-
+          </div>{" "}
           <div className="flex gap-3 justify-center">
             <button
               onClick={restartPractice}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-drag"
             >
               再练一遍
             </button>
             <button
               onClick={goToNextLesson}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
             >
-              {allLessons.length > 1 &&
-              currentLessonIndex < allLessons.length - 1
-                ? "下一节"
-                : "继续练习"}
+              <span>
+                {allLessons.length > 1 &&
+                currentLessonIndex < allLessons.length - 1
+                  ? "下一节"
+                  : "继续练习"}
+              </span>
+              <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
+                空格
+              </span>
             </button>
           </div>
         </div>
@@ -914,7 +938,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             <Settings />
           </Modal>
         </div>
-      </div>      {/* 进度条区域 - 小飘窗模式下隐藏 */}
+      </div>{" "}
+      {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
           <div className="flex items-center justify-center max-w-2xl mx-auto">
