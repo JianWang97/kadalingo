@@ -25,7 +25,7 @@ export interface SpeechServiceInterface {
   /** 播放英文文本 */
   speakEnglish: (text: string) => Promise<void>;
   /** 播放文本（指定语言） */
-  speak: (text: string, language: 'zh-CN' | 'en-US') => Promise<void>;
+  speak: (text: string, language: "zh-CN" | "en-US") => Promise<void>;
   /** 停止播放 */
   stop: () => void;
   /** 检查浏览器是否支持语音合成 */
@@ -69,21 +69,24 @@ class SpeechService implements SpeechServiceInterface {
   }
 
   async speakChinese(text: string): Promise<void> {
-    return this.speak(text, 'zh-CN');
+    return this.speak(text, "zh-CN");
   }
 
   async speakEnglish(text: string): Promise<void> {
-    return this.speak(text, 'en-US');
+    return this.speak(text, "en-US");
   }
-
-  async speak(text: string, language: 'zh-CN' | 'en-US'): Promise<void> {
+  async speak(text: string, language: "zh-CN" | "en-US"): Promise<void> {
     if (!this._settings.enabled || !this.isSupported()) {
-      console.warn('语音功能未启用或不支持');
+      console.warn("语音功能未启用或不支持");
       return;
     }
 
-    // 停止当前播放
-    this.stop();
+    // 如果正在播放，先停止当前播放
+    if (this._isPlaying) {
+      this.stop();
+      // 等待一小段时间确保停止完成
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
 
     return new Promise((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -93,8 +96,8 @@ class SpeechService implements SpeechServiceInterface {
 
       // 尝试选择合适的语音
       const voices = this.getVoices();
-      const preferredVoice = voices.find(voice => 
-        voice.lang.startsWith(language.split('-')[0])
+      const preferredVoice = voices.find((voice) =>
+        voice.lang.startsWith(language.split("-")[0])
       );
       if (preferredVoice) {
         utterance.voice = preferredVoice;
@@ -113,25 +116,44 @@ class SpeechService implements SpeechServiceInterface {
       utterance.onerror = (event) => {
         this.setPlayState(false);
         this._currentUtterance = null;
-        console.error('语音播放错误:', event);
-        reject(new Error(`语音播放失败: ${event.error}`));
+
+        // 对于 interrupted 错误，不显示错误信息，只是静默处理
+        if (event.error === "interrupted") {
+          console.log("语音播放被中断（正常情况）");
+          resolve(); // 将中断视为正常结束
+        } else {
+          console.error("语音播放错误:", event);
+          reject(new Error(`语音播放失败: ${event.error}`));
+        }
       };
 
       this._currentUtterance = utterance;
-      window.speechSynthesis.speak(utterance);
+
+      // 确保 speechSynthesis 准备就绪
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        // 等待取消完成
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 50);
+      } else {
+        window.speechSynthesis.speak(utterance);
+      }
     });
   }
-
   stop(): void {
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      // 先检查是否正在播放或等待播放
+      if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+        window.speechSynthesis.cancel();
+      }
     }
     this.setPlayState(false);
     this._currentUtterance = null;
   }
 
   isSupported(): boolean {
-    return 'speechSynthesis' in window;
+    return "speechSynthesis" in window;
   }
 
   getVoices(): SpeechSynthesisVoice[] {
@@ -152,11 +174,11 @@ class SpeechService implements SpeechServiceInterface {
   private setPlayState(isPlaying: boolean): void {
     if (this._isPlaying !== isPlaying) {
       this._isPlaying = isPlaying;
-      this._playStateCallbacks.forEach(callback => {
+      this._playStateCallbacks.forEach((callback) => {
         try {
           callback(isPlaying);
         } catch (error) {
-          console.error('播放状态回调错误:', error);
+          console.error("播放状态回调错误:", error);
         }
       });
     }
@@ -164,21 +186,21 @@ class SpeechService implements SpeechServiceInterface {
 
   private saveSettings(): void {
     try {
-      localStorage.setItem('speechSettings', JSON.stringify(this._settings));
+      localStorage.setItem("speechSettings", JSON.stringify(this._settings));
     } catch (error) {
-      console.error('保存语音设置失败:', error);
+      console.error("保存语音设置失败:", error);
     }
   }
 
   private loadSettings(): void {
     try {
-      const saved = localStorage.getItem('speechSettings');
+      const saved = localStorage.getItem("speechSettings");
       if (saved) {
         const parsedSettings = JSON.parse(saved);
         this._settings = { ...this._settings, ...parsedSettings };
       }
     } catch (error) {
-      console.error('加载语音设置失败:', error);
+      console.error("加载语音设置失败:", error);
     }
   }
 }

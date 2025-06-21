@@ -47,6 +47,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [shakingInputs, setShakingInputs] = useState<boolean[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
+  const [completedSentencesCount, setCompletedSentencesCount] = useState(0); // 已完成句子数量
 
   // 数据仓储初始化 - 加载课程和课时信息
   useEffect(() => {
@@ -113,6 +114,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
     initializeCourse();
   }, [selectedCourse]); // 依赖selectedCourse，当课程改变时重新加载  // 加载指定课时的句子
+
   const loadLessonSentences = async (courseId: number, lessonId: number) => {
     try {
       const factory = RepositoryFactory.getInstance();
@@ -125,18 +127,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
       // 按句子ID排序，确保每次加载的顺序都一致
       sentencesInLesson.sort((a, b) => a.id - b.id);
-      setSentences(sentencesInLesson);
-
-      // 获取课时进度，恢复已完成的句子状态
+      setSentences(sentencesInLesson); // 获取课时进度，恢复已完成的句子状态
       const progressService = ProgressService.getInstance();
       const progress = await progressService.getLessonProgress(
         courseId,
         lessonId
       );
-
+      console.log("加载课时进度：", progress);
       if (progress && progress.completedSentences.length > 0) {
         // 如果有进度，设置已使用的句子
+        console.log("恢复学习进度，已完成句子：", progress.completedSentences);
         setUsedSentences(progress.completedSentences);
+        setCompletedSentencesCount(progress.completedSentences.length); // 设置已完成句子数量
 
         // 检查课时是否已完成
         const isLessonCompleted = await progressService.isLessonCompleted(
@@ -146,17 +148,49 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
         if (isLessonCompleted) {
           // 如果课时已完成，显示练习完成界面
+          console.log("课时已完成，显示完成界面");
           setIsAllSentencesCompleted(true);
+          setCurrentSentence(null);
         } else {
           setIsAllSentencesCompleted(false);
+          // 课时未完成，需要加载下一个句子
+          // 在设置完 usedSentences 后立即加载下一句
+          const availableSentences = sentencesInLesson.filter(
+            (sentence: SentencePair) =>
+              !progress.completedSentences.includes(sentence.id)
+          );
+          if (availableSentences.length > 0) {
+            // 按照句子ID排序，选择下一个要练习的句子
+            availableSentences.sort((a, b) => a.id - b.id);
+            const nextSentence = availableSentences[0];
+            console.log("设置下一个要练习的句子：", nextSentence);
+            setCurrentSentence(nextSentence);
+
+            // 更新 usedSentences 包含当前正在练习的句子，这样进度条显示正确
+            setUsedSentences((prev) => {
+              if (!prev.includes(nextSentence.id)) {
+                return [...prev, nextSentence.id];
+              }
+              return prev;
+            });
+
+            console.log("查看已经使用的句子（包含当前句子）：", [
+              ...progress.completedSentences,
+              nextSentence.id,
+            ]);
+          } else {
+            console.log("没有可用句子，设置为null");
+            setCurrentSentence(null);
+          }
         }
       } else {
         // 重置练习状态
+        console.log("没有进度，重置练习状态");
         setUsedSentences([]);
+        setCompletedSentencesCount(0); // 重置已完成句子数量
         setIsAllSentencesCompleted(false);
+        setCurrentSentence(null);
       }
-
-      setCurrentSentence(null);
     } catch (err) {
       console.error("Failed to load lesson sentences:", err);
       setError(
@@ -180,12 +214,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
     }
   };
-
   useEffect(() => {
-    if (sentences.length > 0 && !isLoading) {
+    // 只有在句子加载完成，不在加载状态，且当前句子为空时才自动加载下一句
+    // 这样避免在有进度恢复时重复加载
+    if (
+      sentences.length > 0 &&
+      !isLoading &&
+      !currentSentence &&
+      !isAllSentencesCompleted
+    ) {
       loadNextSentence();
     }
-  }, [sentences, isLoading]);
+  }, [sentences, isLoading, currentSentence, isAllSentencesCompleted]);
 
   // 解析句子，分离单词和标点符号
   const parseWordsAndPunctuation = (sentence: string) => {
@@ -271,9 +311,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       document.removeEventListener("keydown", handleGlobalKeyPress);
     };
   }, [isCorrect, wordInputs, isAllSentencesCompleted]);
+
   // 处理播放英文的函数
   const handleSpeakEnglish = () => {
-    if (currentSentence) {
+    if (currentSentence && !isPlaying) {
       speakEnglish(currentSentence.english);
     }
   };
@@ -302,12 +343,13 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     setIsCorrect(null);
     setShowHints(
       Array(parseWordsAndPunctuation(nextSentence.english).length).fill(false)
-    );
-
-    // 自动播放英文（延迟一点时间让UI更新完成）
-    if (speechSettings.autoPlay && nextSentence) {
+    ); // 自动播放英文（延迟一点时间让UI更新完成）
+    if (speechSettings.autoPlay && nextSentence && !isPlaying) {
       setTimeout(() => {
-        speakEnglish(nextSentence.english);
+        if (!isPlaying) {
+          // 再次检查是否正在播放
+          speakEnglish(nextSentence.english);
+        }
       }, 300);
     }
 
@@ -416,18 +458,17 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         if (allWordsCorrect) {
           // 所有单词都正确，设置整体状态
           setIsCorrect(true);
-          setFeedback("全部单词正确！🎉");
-
-          // 保存学习进度
+          setFeedback("全部单词正确！🎉"); // 保存学习进度
           if (currentCourse && currentLesson) {
             const progressService = ProgressService.getInstance();
             progressService.markSentenceCompleted(
               currentCourse.id,
               currentLesson.id,
               currentSentence.id,
-              true,
               sentences.length
             );
+            // 更新已完成句子数量
+            setCompletedSentencesCount((prev) => prev + 1);
           }
 
           // 不自动进入下一句，等待用户手动操作
@@ -513,21 +554,36 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }, 100);
     }
   };
-
   const nextSentence = () => {
     loadNextSentence();
   };
+
   // 再来一遍 - 重置当前练习
-  const restartPractice = () => {
+  const restartPractice = async () => {
+    // 清除当前课节的进度记录
+    if (currentCourse && currentLesson) {
+      try {
+        const progressService = ProgressService.getInstance();
+        await progressService.resetLessonProgress(
+          currentCourse.id,
+          currentLesson.id
+        );
+      } catch (err) {
+        console.error("Failed to reset lesson progress:", err);
+      }
+    }
+
     setUsedSentences([]);
+    setCompletedSentencesCount(0);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
   };
+
   // 切换到下一课时
   const goToNextLesson = async () => {
     if (allLessons.length === 0) {
       // 如果没有课程数据，就使用原来的重新开始逻辑
-      restartPractice();
+      await restartPractice();
       return;
     }
 
@@ -542,11 +598,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         await loadLessonSentences(selectedCourse.id, nextLesson.id);
       }
     } else {
-      // 已经是最后一课时，可以考虑显示课程完成提示
-      console.log("已完成所有课时！");
-      // 或者循环回到第一课时
-      setCurrentLessonIndex(0);
-      setCurrentLesson(allLessons[0]);
       if (selectedCourse) {
         await loadLessonSentences(selectedCourse.id, allLessons[0].id);
       }
@@ -554,6 +605,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   };
   const resetGame = () => {
     setUsedSentences([]);
+    setCompletedSentencesCount(0);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
   };
@@ -638,7 +690,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   // 练习完成显示
   if (isAllSentencesCompleted) {
     return (
-      <div className={`h-full flex items-center justify-center bg-gray-50 ${isFloating ? "floating-mode-content" : ""}`}>
+      <div
+        className={`h-full flex items-center justify-center bg-gray-50 ${
+          isFloating ? "floating-mode-content" : ""
+        }`}
+      >
         <div className="text-center max-w-sm mx-auto px-6">
           <div className="text-5xl mb-6">🎉</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
@@ -647,7 +703,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           </div>{" "}
           <div className="flex gap-3 justify-center">
             <button
-              onClick={restartPractice}
+              onClick={() => restartPractice().catch(console.error)}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-drag"
             >
               再练一遍
@@ -943,10 +999,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
           <div className="flex items-center justify-center max-w-2xl mx-auto">
-            {/* 进度条 */}
+            {/* 进度条 */}{" "}
             <div className="flex-1 text-center">
               <div className="text-sm text-gray-400 mb-2">
-                {usedSentences.length} / {sentences.length}
+                {completedSentencesCount} / {sentences.length}
               </div>
               <div className="w-full h-2 bg-gray-200 rounded-full">
                 <div
@@ -954,7 +1010,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   style={{
                     width: `${
                       sentences.length > 0
-                        ? (usedSentences.length / sentences.length) * 100
+                        ? (completedSentencesCount / sentences.length) * 100
                         : 0
                     }%`,
                   }}
