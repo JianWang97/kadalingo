@@ -392,6 +392,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     idx: number
   ) => {
     if (e.key === " ") {
+      e.stopPropagation()
       e.preventDefault();
       playKeySound("space");
 
@@ -692,7 +693,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     return (
       <div
         className={`h-full flex items-center justify-center bg-gray-50 ${
-          isFloating ? "floating-mode-content" : ""
+          isFloating ? "floating-mode-content drag-region" : ""
         }`}
       >
         <div className="text-center max-w-sm mx-auto px-6">

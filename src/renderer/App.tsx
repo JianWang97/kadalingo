@@ -67,15 +67,7 @@ function App() {
                     isFloating ? "floating-mode-content m-2" : ""
                   }`}
                 >
-                  <div
-                    className={
-                        isFloating
-                        ? "p-1"
-                        : "h-full"
-                    }
-                  >
                     {renderPage()}
-                  </div>
                 </div>
               </div>
             </div>
