@@ -11,5 +11,5 @@ export * from './repositories/indexedDBRepository';
 export * from './repositories/RepositoryFactory';
 
 // 示例数据
-export * from './sampleData';
+export * from './sampleCourses';
 

@@ -5,6 +5,7 @@ export interface SentencePair {
   id: number;
   chinese: string;
   english: string;
+  phonetic?: string; // 新增：英文音标
   difficulty: "easy" | "medium" | "hard";
 }
 

@@ -5,7 +5,7 @@
 export * from './types';
 
 // 重新导出示例数据
-export * from './sampleData';
+export * from './sampleCourses';
 
 
 // 重新导出数据仓库接口

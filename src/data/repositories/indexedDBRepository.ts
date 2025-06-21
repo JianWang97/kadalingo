@@ -8,7 +8,8 @@ import {
   LearningProgress,
   QueryParams,
 } from "../types";
-import { sampleCourses } from "../sampleData";
+import { sampleCourses } from "../sampleCourses";
+import { beginnerEnglishDialogueCourse } from '../beginnerEnglishDialogueCourse';
 
 // Dexie 数据库类
 class LanguageLearningDB extends Dexie {
@@ -66,11 +67,19 @@ export class IndexedDBRepository implements IDataRepository {
   }  // 加载示例数据
   private async loadSampleData(): Promise<void> {
     await this.db.transaction('rw', this.db.courses, this.db.metadata, async () => {
-      // 加载课程数据
-      await this.db.courses.bulkAdd(sampleCourses);
-
+      // 检查 sampleCourses 的 id 是否已存在，避免重复插入
+      const existingIds = new Set((await this.db.courses.toArray()).map(c => c.id));
+      const newCourses = sampleCourses.filter(course => !existingIds.has(course.id));
+      if (newCourses.length > 0) {
+        await this.db.courses.bulkAdd(newCourses);
+      }
+      if (beginnerEnglishDialogueCourse.id && !existingIds.has(beginnerEnglishDialogueCourse.id)) {
+        await this.db.courses.add(beginnerEnglishDialogueCourse);
+      }
       // 设置下一个ID
-      await this.db.metadata.put({ key: "nextCourseId", value: sampleCourses.length + 1 });
+      // 查找当前系统中最大的课程ID，确保下一个ID不会冲突
+      const maxId = sampleCourses.reduce((max, course) => Math.max(max, course.id), 0);
+      await this.db.metadata.put({ key: "nextCourseId", value: maxId + 1 });
     });
   }
   
