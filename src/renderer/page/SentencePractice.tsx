@@ -35,12 +35,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const { playKeySound } = useKeyboardSound();
   // 检测是否为小飘窗模式
   const isFloating = useFloatingMode();
-
   const [currentSentence, setCurrentSentence] = useState<SentencePair | null>(
     null
   );
-  const [score, setScore] = useState(0);
-  const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState<string>("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [usedSentences, setUsedSentences] = useState<number[]>([]);
@@ -403,8 +400,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           // 所有单词都正确，设置整体状态
           setIsCorrect(true);
           setFeedback("全部单词正确！🎉");
-          setScore((prev) => prev + 1);
-          setAttempts((prev) => prev + 1);
 
           // 保存学习进度
           if (currentCourse && currentLesson) {
@@ -424,7 +419,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           if (activeElement) {
             activeElement.blur();
           }
-        }      }
+        }}
     }
   };
   const showCorrectAnswer = async () => {
@@ -538,10 +533,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         await loadLessonSentences(selectedCourse.id, allLessons[0].id);
       }
     }
-  };
-  const resetGame = () => {
-    setScore(0);
-    setAttempts(0);
+  };  const resetGame = () => {
     setUsedSentences([]);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
@@ -622,9 +614,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           </div>
         </div>
       </div>
-    );
-  }
-  const accuracy = attempts > 0 ? Math.round((score / attempts) * 100) : 0;
+    );  }
   // 练习完成显示
   if (isAllSentencesCompleted) {
     return (
@@ -634,10 +624,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           <h2 className="text-xl font-semibold text-gray-900 mb-3">练习完成</h2>
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
-            <p className="text-lg font-medium text-purple-600">
-              {score}/{attempts}{" "}
-              <span className="text-sm text-gray-500">({accuracy}%)</span>
-            </p>
           </div>
 
           <div className="flex gap-3 justify-center">
@@ -928,21 +914,12 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             <Settings />
           </Modal>
         </div>
-      </div>
-      {/* 进度条区域 - 小飘窗模式下隐藏 */}
+      </div>      {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
         <div className="w-full bg-gray-50 px-6 py-3">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
-            {/* 左侧：得分 */}
-            <div className="text-center">
-              <div className="text-sm font-semibold text-gray-900">
-                {score}/{attempts}
-              </div>
-              <div className="text-xs text-gray-500">得分</div>
-            </div>
-
-            {/* 中间：进度条 */}
-            <div className="flex-1 mx-6 text-center">
+          <div className="flex items-center justify-center max-w-2xl mx-auto">
+            {/* 进度条 */}
+            <div className="flex-1 text-center">
               <div className="text-sm text-gray-400 mb-2">
                 {usedSentences.length} / {sentences.length}
               </div>
@@ -958,14 +935,6 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   }}
                 />
               </div>
-            </div>
-
-            {/* 右侧：准确率 */}
-            <div className="text-center">
-              <div className="text-sm font-semibold text-purple-600">
-                {accuracy}%
-              </div>{" "}
-              <div className="text-xs text-gray-500">准确率</div>
             </div>
           </div>
         </div>
