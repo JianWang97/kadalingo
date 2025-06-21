@@ -39,8 +39,8 @@
 ### 安装运行
 ```bash
 # 克隆项目
-git clone https://github.com/JianWang6/electron-forge-react-vite.git kada-english
-cd kada-english
+git clone https://github.com/JianWang97/kadalingo.git kadalingo
+cd kadalingo
 
 # 安装依赖
 npm install
@@ -136,7 +136,7 @@ npm run clean
 ## 🐛 问题反馈
 
 如果您在使用过程中遇到问题，请通过以下方式反馈：
-- [GitHub Issues](https://github.com/JianWang6/electron-forge-react-vite/issues)
+- [GitHub Issues](https://github.com/JianWang97/kadalingo/issues)
 - 邮箱: w415895535@outlook.com
 
 ## 📄 许可证
@@ -145,8 +145,8 @@ npm run clean
 
 ## 👨‍💻 作者
 
-**JianWang6**
-- GitHub: [@JianWang6](https://github.com/JianWang6)
+**JianWang97**
+- GitHub: [@JianWang97](https://github.com/JianWang97)
 - Email: w415895535@outlook.com
 
 ---

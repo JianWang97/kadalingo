@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "description": "🚀 咔哒 - 一个用于语言学习的句子练习工具",
   "main": ".vite/build/main.js",
-  "homepage": "https://github.com/JianWang6/ClickLingo",
+  "homepage": "https://github.com/JianWang6/kadalingo",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JianWang6/ClickLingo.git"
+    "url": "https://github.com/JianWang6/kadalingo.git"
   },
   "bugs": {
-    "url": "https://github.com/JianWang6/ClickLingo/issues"
+    "url": "https://github.com/JianWang6/kadalingo/issues"
   },
   "scripts": {
     "start": "electron-forge start",
