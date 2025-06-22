@@ -408,8 +408,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     if (!currentSentence) return;
 
     const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
-    const userWord = wordInputs[idx]?.trim().toLowerCase();
-    const correctWord = parsedTokens[idx]?.word.toLowerCase();
+    const userWord = normalizeWord(wordInputs[idx] || "");
+    const correctWord = normalizeWord(parsedTokens[idx]?.word || "");
 
     const isWordCorrect = userWord === correctWord;
     setWordResults((prev) => {
@@ -448,8 +448,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         // 如果是最后一个单词，检查整句是否都正确
         const allWordsCorrect = wordInputs.every((input, index) => {
           return (
-            input.trim().toLowerCase() ===
-            parsedTokens[index]?.word.toLowerCase()
+            normalizeWord(input) ===
+            normalizeWord(parsedTokens[index]?.word || "")
           );
         });
         if (allWordsCorrect) {
@@ -503,8 +503,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   ) => {
     // 检查当前单词是否需要提示
     if (currentIndex >= 0 && currentIndex < tokens.length) {
-      const userWord = wordInputs[currentIndex]?.trim().toLowerCase() || "";
-      const correctWord = tokens[currentIndex]?.word.toLowerCase() || "";
+      const userWord = normalizeWord(wordInputs[currentIndex] || "");
+      const correctWord = normalizeWord(tokens[currentIndex]?.word || "");
       if (userWord === "" || userWord !== correctWord) {
         return currentIndex;
       }
@@ -512,8 +512,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
     // 找第一个需要填写或错误的单词
     for (let i = 0; i < tokens.length; i++) {
-      const userWord = wordInputs[i]?.trim().toLowerCase() || "";
-      const correctWord = tokens[i]?.word.toLowerCase() || "";
+      const userWord = normalizeWord(wordInputs[i] || "");
+      const correctWord = normalizeWord(tokens[i]?.word || "");
       if (userWord === "" || userWord !== correctWord) {
         return i;
       }
@@ -1102,3 +1102,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 };
 
 export default SentencePractice;
+
+// 辅助函数：去除单双引号
+const normalizeWord = (word: string) => {
+  return word.replace(/[‘’“”'"\u2018\u2019\u201C\u201D]/g, "").trim().toLowerCase();
+};
