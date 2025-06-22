@@ -7,6 +7,7 @@ export interface LLMConfig {
 export interface GeneratedSentence {
   chinese: string;
   english: string;
+  phonetic: string;
   difficulty: "easy" | "medium" | "hard";
 }
 
@@ -41,6 +42,7 @@ export interface PartialCourse {
 interface RawSentence {
   chinese: string;
   english: string;
+  phonetic: string;
   difficulty?: "easy" | "medium" | "hard";
 }
 
@@ -64,92 +66,13 @@ export class LLMService {
   updateConfig(config: Partial<LLMConfig>) {
     this.config = { ...this.config, ...config };
   }
-  async generateSentences(
-    topic: string,
-    count = 10,
-    difficulty: "easy" | "medium" | "hard" = "medium"
-  ): Promise<GeneratedSentence[]> {
-    const prompt = `生成${count}个关于"${topic}"主题的中英文对照句子。
-要求：
-1. 句子难度为${
-      difficulty === "easy" ? "简单" : difficulty === "medium" ? "中等" : "困难"
-    }
-2. 中文句子要自然流畅，适合中国人学习英语使用
-3. 英文翻译要准确地道
-4. 请返回JSON格式数组，每个对象包含chinese、english和difficulty字段
-5. 中文中不要带有拼音或注音或英文，也不要有引号，直接是中文句子
-6. 每个句子都要完整且有意义且语句尽量保持10个以内，除非是成语或固定搭配
 
-示例格式：
-[
-  {"chinese": "今天天气很好。", "english": "The weather is nice today.", "difficulty": "easy"},
-  {"chinese": "我喜欢在周末读书。", "english": "I like reading books on weekends.", "difficulty": "easy"}
-]`;
-
-    const response = await this.makeRequest([
-      { role: "user", content: prompt },
-    ]);
-    try {
-      const sentences: RawSentence[] = JSON.parse(response);
-      return sentences.map((sentence: RawSentence) => ({
-        chinese: sentence.chinese,
-        english: sentence.english,
-        difficulty: sentence.difficulty || difficulty,
-      }));
-    } catch (error) {
-      throw new Error("解析生成的句子失败");
-    }
-  }
-  async generateCourse(
-    topic: string,
-    level: "beginner" | "intermediate" | "advanced" = "beginner",
-    sentenceCount = 20
-  ): Promise<GeneratedCourse> {
-    const prompt = `为"${topic}"主题创建一个完整的英语学习课程。
-要求：
-1. 课程等级：${
-      level === "beginner" ? "初级" : level === "intermediate" ? "中级" : "高级"
-    }
-2. 包含${sentenceCount}个练习句子
-3. 课程要有清晰的标题和描述
-4. 句子要循序渐进，符合课程等级
-
-请返回JSON格式：
-{
-  "title": "课程标题",
-  "description": "课程描述",
-  "level": "${level}",
-  "sentences": [
-    {"chinese": "中文句子", "english": "English sentence", "difficulty": "easy"}
-  ]
-}`;
-
-    const response = await this.makeRequest([
-      { role: "user", content: prompt },
-    ]);
-    try {
-      const course: RawCourse = JSON.parse(response);
-      return {
-        title: course.title,
-        description: course.description,
-        level: course.level,
-        sentences: course.sentences.map((sentence: RawSentence) => ({
-          chinese: sentence.chinese,
-          english: sentence.english,
-          difficulty: sentence.difficulty || "easy",
-        })),
-      };
-    } catch (error) {
-      throw new Error("解析生成的课程失败");
-    }
-  }
   // 流式生成课程方法
   async *generateCourseStream(
     topic: string,
     level: "beginner" | "intermediate" | "advanced" = "beginner",
     sentenceCount = 20
-  ): AsyncGenerator<StreamChunk, void, unknown> {
-    const prompt = `为"${topic}"主题创建一个完整的英语学习课程。
+  ): AsyncGenerator<StreamChunk, void, unknown> {    const prompt = `为"${topic}"主题创建一个完整的英语学习课程。
 要求：
 1. 课程等级：${
       level === "beginner" ? "初级" : level === "intermediate" ? "中级" : "高级"
@@ -157,14 +80,18 @@ export class LLMService {
 2. 包含${sentenceCount}个练习句子
 3. 课程要有清晰的标题和描述
 4. 句子要循序渐进，符合课程等级
-
+5. 每个英文句子都要提供准确的国际音标（IPA）
+6. 音标使用标准格式，用斜杠包围，标注重音和音节划分
+7. 课程标题和描述使用中文
+8. 每个句子不要太长，尽量控制在10个词汇以内
+9. 英文句子中，不要出现中文字符，例如:上下单引号
 请返回JSON格式：
 {
   "title": "课程标题",
   "description": "课程描述", 
   "level": "${level}",
   "sentences": [
-    {"chinese": "中文句子", "english": "English sentence", "difficulty": "easy"}
+    {"chinese": "中文句子", "english": "English sentence", "phonetic": "/fəˈnetɪk ˌtrænˈskrɪpʃn/", "difficulty": "easy"}
   ]
 }`;
 
@@ -213,7 +140,8 @@ export class LLMService {
           if (thinkingObj && "reasoning_content" in thinkingObj) {
             thinkingDelta = thinkingObj.reasoning_content as string;
           }
-        }        if (thinkingDelta) {
+        }
+        if (thinkingDelta) {
           thinkingContent += thinkingDelta;
           yield {
             type: "thinking",
@@ -250,10 +178,10 @@ export class LLMService {
                   data: {
                     title: courseData.title,
                     description: courseData.description,
-                    level: courseData.level,
-                    sentences: courseData.sentences.map((s) => ({
+                    level: courseData.level,                    sentences: courseData.sentences.map((s) => ({
                       chinese: s.chinese,
                       english: s.english,
+                      phonetic: s.phonetic,
                       difficulty: s.difficulty || "easy",
                     })),
                   },
@@ -294,10 +222,10 @@ export class LLMService {
                         30 + (partial.sentences.length / sentenceCount) * 60
                       );
                       yield {
-                        type: "sentence",
-                        data: {
+                        type: "sentence",                        data: {
                           chinese: sentence.chinese,
                           english: sentence.english,
+                          phonetic: sentence.phonetic,
                           difficulty: sentence.difficulty || "easy",
                         },
                         progress,
@@ -364,7 +292,9 @@ export class LLMService {
     }
 
     return data.choices[0].message.content;
-  }  private async makeStreamRequest(
+  }
+
+  private async makeStreamRequest(
     messages: Array<{ role: string; content: string }>
   ): Promise<
     AsyncIterable<{
@@ -404,7 +334,8 @@ export class LLMService {
     }
 
     return this.parseSSEStream(response);
-  }  private async *parseSSEStream(response: Response): AsyncGenerator<
+  }
+  private async *parseSSEStream(response: Response): AsyncGenerator<
     {
       choices?: Array<{
         delta?: {
@@ -500,11 +431,9 @@ export class LLMService {
         );
         if (sentencesMatch) {
           const sentencesStr = sentencesMatch[1];
-          const sentences: RawSentence[] = [];
-
-          // 匹配完整的句子对象
+          const sentences: RawSentence[] = [];          // 匹配完整的句子对象
           const sentenceRegex =
-            /\{\s*"chinese"\s*:\s*"([^"]*)"[^}]*"english"\s*:\s*"([^"]*)"[^}]*"difficulty"\s*:\s*"([^"]*)"[^}]*\}/g;
+            /\{\s*"chinese"\s*:\s*"([^"]*)"[^}]*"english"\s*:\s*"([^"]*)"[^}]*"phonetic"\s*:\s*"([^"]*)"[^}]*"difficulty"\s*:\s*"([^"]*)"[^}]*\}/g;
           let match;
 
           // eslint-disable-next-line no-cond-assign
@@ -512,7 +441,8 @@ export class LLMService {
             sentences.push({
               chinese: match[1],
               english: match[2],
-              difficulty: match[3] as "easy" | "medium" | "hard",
+              phonetic: match[3],
+              difficulty: match[4] as "easy" | "medium" | "hard",
             });
           }
 

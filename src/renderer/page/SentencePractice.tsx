@@ -45,7 +45,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   const [wordResults, setWordResults] = useState<(boolean | null)[]>([]);
   const [showHints, setShowHints] = useState<boolean[]>([]);
   const [shakingInputs, setShakingInputs] = useState<boolean[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);  // 练习完成状态
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // 练习完成状态
   const [isAllSentencesCompleted, setIsAllSentencesCompleted] = useState(false);
   const [completedSentencesCount, setCompletedSentencesCount] = useState(0); // 已完成句子数量
 
@@ -144,7 +144,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         const isLessonCompleted = await progressService.isLessonCompleted(
           courseId,
           lessonId
-        );        if (isLessonCompleted) {
+        );
+        if (isLessonCompleted) {
           // 如果课时已完成，显示练习完成界面
           console.log("课时已完成，显示完成界面");
           setIsAllSentencesCompleted(true);
@@ -162,7 +163,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             availableSentences.sort((a, b) => a.id - b.id);
             const nextSentence = availableSentences[0];
             console.log("设置下一个要练习的句子：", nextSentence);
-            setCurrentSentence(nextSentence);
+            setCurrentSentenceWithAutoPlay(nextSentence);
 
             // 更新 usedSentences 包含当前正在练习的句子，这样进度条显示正确
             setUsedSentences((prev) => {
@@ -309,11 +310,51 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       document.removeEventListener("keydown", handleGlobalKeyPress);
     };
   }, [isCorrect, wordInputs, isAllSentencesCompleted]);
+  // 设置当前句子并触发自动播放
+  const setCurrentSentenceWithAutoPlay = (sentence: SentencePair) => {
+    setCurrentSentence(sentence);
 
-  // 处理播放英文的函数
+    // 重置相关状态
+    setFeedback("");
+    setIsCorrect(null);
+    setShowHints(
+      Array(parseWordsAndPunctuation(sentence.english).length).fill(false)
+    );
+
+    // 自动播放英文（延迟一点时间让UI更新完成）
+    if (speechSettings.autoPlay && sentence && !isPlaying) {
+      console.log("恢复进度时自动播放检查:", {
+        autoPlay: speechSettings.autoPlay,
+        hasCurrentSentence: !!sentence,
+        isPlaying: isPlaying,
+        text: sentence.english,
+      });
+      setTimeout(() => {
+        if (!isPlaying) {
+          // 再次检查是否正在播放
+          console.log("恢复进度时开始自动播放:", sentence.english);
+          speakEnglish(sentence.english);
+        } else {
+          console.log("恢复进度时跳过自动播放，正在播放中");
+        }
+      }, 300);
+    } else {
+      console.log("恢复进度时跳过自动播放:", {
+        autoPlay: speechSettings.autoPlay,
+        hasCurrentSentence: !!sentence,
+        isPlaying: isPlaying,
+      });
+    }
+  };
   const handleSpeakEnglish = () => {
     if (currentSentence && !isPlaying) {
+      console.log("手动播放英文:", currentSentence.english);
       speakEnglish(currentSentence.english);
+    } else {
+      console.log("跳过播放:", {
+        hasCurrentSentence: !!currentSentence,
+        isPlaying: isPlaying,
+      });
     }
   };
   const loadNextSentence = () => {
@@ -322,32 +363,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     }
     const availableSentences = sentences.filter(
       (sentence: SentencePair) => !usedSentences.includes(sentence.id)
-    );    let nextSentence: SentencePair;
+    );
+
     if (availableSentences.length === 0) {
       // 所有句子都练习完了
       setIsAllSentencesCompleted(true);
       return; // 不加载新句子，显示完成界面
-    } else {
-      // 按照句子ID顺序选择下一个句子，确保学习进度的一致性
-      availableSentences.sort((a, b) => a.id - b.id);
-      nextSentence = availableSentences[0]; // 总是选择ID最小的未完成句子
-      setCurrentSentence(nextSentence);
-      setUsedSentences((prev) => [...prev, nextSentence.id]);
-      setIsAllSentencesCompleted(false);
-    }
-    setFeedback("");
-    setIsCorrect(null);
-    setShowHints(
-      Array(parseWordsAndPunctuation(nextSentence.english).length).fill(false)
-    ); // 自动播放英文（延迟一点时间让UI更新完成）
-    if (speechSettings.autoPlay && nextSentence && !isPlaying) {
-      setTimeout(() => {
-        if (!isPlaying) {
-          // 再次检查是否正在播放
-          speakEnglish(nextSentence.english);
-        }
-      }, 300);
-    }
+    } // 按照句子ID顺序选择下一个句子，确保学习进度的一致性
+    availableSentences.sort((a, b) => a.id - b.id);
+    const nextSentence = availableSentences[0]; // 总是选择ID最小的未完成句子
+    setCurrentSentenceWithAutoPlay(nextSentence);
+    setUsedSentences((prev) => [...prev, nextSentence.id]);
+    setIsAllSentencesCompleted(false);
 
     // 自动聚焦到第一个输入框
     setTimeout(() => {
@@ -572,7 +599,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     setCompletedSentencesCount(0);
     setIsAllSentencesCompleted(false);
     loadNextSentence();
-  };  // 切换到下一课时
+  }; // 切换到下一课时
   const goToNextLesson = async () => {
     if (allLessons.length === 0) {
       // 如果没有课程数据，就使用原来的重新开始逻辑
@@ -603,18 +630,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     loadNextSentence();
   };
 
-  const getDifficultyText = (difficulty: string) => {
-    switch (difficulty) {
-      case "easy":
-        return "简单";
-      case "medium":
-        return "中等";
-      case "hard":
-        return "困难";
-      default:
-        return "未知";
-    }
-  }; // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
+  // 只在本页面监听 Ctrl+Shift+P 切换窗口化和 Esc 退出窗口化
   useEffect(() => {
     const handleFloatingHotkey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === "P" || e.key === "p")) {
@@ -687,19 +703,25 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
         className={`h-full flex items-center justify-center bg-gray-50 ${
           isFloating ? "floating-mode-content drag-region" : ""
         }`}
-      >        <div className="text-center max-w-sm mx-auto px-6">
+      >
+        {" "}
+        <div className="text-center max-w-sm mx-auto px-6">
           <div className="text-5xl mb-6">🎉</div>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">
-            {currentLessonIndex === allLessons.length - 1 ? "课程全部完成！" : "练习完成"}
+            {currentLessonIndex === allLessons.length - 1
+              ? "课程全部完成！"
+              : "练习完成"}
           </h2>
           <div className="text-gray-600 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
-            {currentLessonIndex === allLessons.length - 1 && allLessons.length > 1 && (
-              <p className="text-green-600 font-medium">
-                🌟 恭喜您完成了全部 {allLessons.length} 个课时！
-              </p>
-            )}
-          </div>{" "}          <div className="flex gap-3 justify-center">
+            {currentLessonIndex === allLessons.length - 1 &&
+              allLessons.length > 1 && (
+                <p className="text-green-600 font-medium">
+                  🌟 恭喜您完成了全部 {allLessons.length} 个课时！
+                </p>
+              )}
+          </div>{" "}
+          <div className="flex gap-3 justify-center">
             <button
               onClick={() => restartPractice().catch(console.error)}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-drag"
@@ -881,14 +903,18 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               </div>
               {!isFloating && (
                 <div
-                  className={`text-xs text-gray-400 ${
+                  className={`text-xs justify-center text-gray-400 ${
                     isFloating ? "drag-region" : ""
                   }`}
                 >
-                  {getDifficultyText(currentSentence.difficulty)}
+                  {/* 难度显示已替换为音标 */}
+                  <span className="text-gray-400 font-semibold">
+                    {currentSentence.phonetic || "无音标"}
+                  </span>
                 </div>
               )}
-            </div>            {/* 输入框区域 */}
+            </div>{" "}
+            {/* 输入框区域 */}
             <div className={`mb-8 ${isFloating ? "drag-region" : ""} relative`}>
               <div
                 className={`flex flex-wrap gap-2 justify-center items-baseline w-full ${
@@ -962,7 +988,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   )
                 )}
               </div>
-              
+
               {/* 反馈信息 - 固定在输入框下方，类似toast */}
               {feedback && (
                 <div
@@ -1105,5 +1131,8 @@ export default SentencePractice;
 
 // 辅助函数：去除单双引号
 const normalizeWord = (word: string) => {
-  return word.replace(/[‘’“”'"\u2018\u2019\u201C\u201D]/g, "").trim().toLowerCase();
+  return word
+    .replace(/[‘’“”'"\u2018\u2019\u201C\u201D]/g, "")
+    .trim()
+    .toLowerCase();
 };

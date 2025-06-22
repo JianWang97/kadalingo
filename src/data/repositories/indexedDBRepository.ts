@@ -31,31 +31,59 @@ class LanguageLearningDB extends Dexie {
 // Dexie 优化的数据仓库实现
 export class IndexedDBRepository implements IDataRepository {
   private db: LanguageLearningDB;
+  
+  // 保留的ID范围配置
+  private static readonly RESERVED_ID_RANGES = {
+    // 系统默认课程ID范围：1-1000
+    SYSTEM_COURSES: { min: 1, max: 1000 },
+    // 用户课程ID从1001开始
+    USER_COURSES: { min: 1001, max: Number.MAX_SAFE_INTEGER }
+  };
+  
   constructor() {
     this.db = new LanguageLearningDB();
   }
-
   async initialize(): Promise<void> {
     await this.db.open();
     await this.loadSampleDataIfNeeded();
+    // 修复可能存在的错误ID计数器
+    await this.fixUserCourseIdCounter();
   }
 
   async cleanup(): Promise<void> {
     await this.db.close();
-  }
-  // 辅助方法：获取下一个课程ID
+  }  // 辅助方法：获取下一个课程ID
   private async getNextCourseId(): Promise<number> {
-    return this.getNextId("nextCourseId");
+    const record = await this.db.metadata.get("nextCourseId");
+    const currentValue = (record?.value as number) || IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min;
+    
+    // 确保当前值至少是用户课程的最小值
+    const safeCurrentValue = Math.max(currentValue, IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min);
+    const nextValue = safeCurrentValue + 1;
+    
+    await this.db.metadata.put({ key: "nextCourseId", value: nextValue });
+    return safeCurrentValue;
   }
-
   // 辅助方法：获取并更新下一个ID
-  private async getNextId(key: string): Promise<number> {
+  private async getNextId(key: string, minValue = 1): Promise<number> {
     const record = await this.db.metadata.get(key);
-    const currentValue = (record?.value as number) || 1;
+    const currentValue = (record?.value as number) || minValue;
     const nextValue = currentValue + 1;
     
     await this.db.metadata.put({ key, value: nextValue });
     return currentValue;
+  }
+
+  // 辅助方法：检查ID是否在保留范围内
+  private isReservedCourseId(id: number): boolean {
+    const { min, max } = IndexedDBRepository.RESERVED_ID_RANGES.SYSTEM_COURSES;
+    return id >= min && id <= max;
+  }
+
+  // 辅助方法：验证课程ID是否可用于用户创建
+  private validateUserCourseId(id: number): boolean {
+    const { min } = IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES;
+    return id >= min;
   }
 
   // 辅助方法：检查是否需要加载示例数据
@@ -75,12 +103,31 @@ export class IndexedDBRepository implements IDataRepository {
       }
       if (beginnerEnglishDialogueCourse.id && !existingIds.has(beginnerEnglishDialogueCourse.id)) {
         await this.db.courses.add(beginnerEnglishDialogueCourse);
+      }      
+      // 设置用户课程的起始ID，确保不与系统保留ID冲突
+      // 检查是否已有nextCourseId记录，如果没有才设置
+      const existingRecord = await this.db.metadata.get("nextCourseId");
+      if (!existingRecord) {
+        const userCoursesStartId = IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min;
+        await this.db.metadata.put({ key: "nextCourseId", value: userCoursesStartId });
       }
-      // 设置下一个ID
-      // 查找当前系统中最大的课程ID，确保下一个ID不会冲突
-      const maxId = sampleCourses.reduce((max, course) => Math.max(max, course.id), 0);
-      await this.db.metadata.put({ key: "nextCourseId", value: maxId + 1 });
     });
+  }
+  
+  // 公共方法：获取保留ID范围信息
+  static getReservedIdRanges() {
+    return IndexedDBRepository.RESERVED_ID_RANGES;
+  }
+
+  // 公共方法：检查ID是否为系统保留ID
+  static isSystemReservedId(id: number): boolean {
+    const { min, max } = IndexedDBRepository.RESERVED_ID_RANGES.SYSTEM_COURSES;
+    return id >= min && id <= max;
+  }
+
+  // 公共方法：获取下一个可用的用户课程ID（用于外部调用）
+  async getNextAvailableUserCourseId(): Promise<number> {
+    return this.getNextCourseId();
   }
   
   // 课程相关操作
@@ -114,9 +161,14 @@ export class IndexedDBRepository implements IDataRepository {
   async getCourseById(id: number): Promise<Course | null> {
     return await this.db.courses.get(id) || null;
   }
-
   async createCourse(courseData: Omit<Course, "id">): Promise<Course> {
     const id = await this.getNextCourseId();
+    
+    // 验证生成的ID是否符合用户课程ID规范
+    if (!this.validateUserCourseId(id)) {
+      throw new Error(`Generated course ID ${id} is in reserved range. User courses must have ID >= ${IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min}`);
+    }
+    
     const course: Course = {
       ...courseData,
       id,
@@ -145,8 +197,13 @@ export class IndexedDBRepository implements IDataRepository {
     };    await this.db.courses.put(updatedCourse);
     return updatedCourse;
   }
-
   async deleteCourse(id: number): Promise<boolean> {
+    // 检查是否为系统保留课程
+    if (this.isReservedCourseId(id)) {
+      console.warn(`Cannot delete system reserved course with ID ${id}`);
+      return false;
+    }
+    
     try {
       await this.db.courses.delete(id);
       return true;
@@ -155,6 +212,31 @@ export class IndexedDBRepository implements IDataRepository {
     }
   }
 
+  // 系统课程管理方法
+  async getSystemCourses(): Promise<Course[]> {
+    const allCourses = await this.db.courses.toArray();
+    return allCourses.filter(course => this.isReservedCourseId(course.id));
+  }
+
+  async getUserCourses(): Promise<Course[]> {
+    const allCourses = await this.db.courses.toArray();
+    return allCourses.filter(course => !this.isReservedCourseId(course.id));
+  }
+
+  // 重置系统课程数据（危险操作，谨慎使用）
+  async resetSystemCourses(): Promise<void> {
+    await this.db.transaction('rw', this.db.courses, async () => {
+      // 删除所有系统课程
+      const systemCourses = await this.getSystemCourses();
+      for (const course of systemCourses) {
+        await this.db.courses.delete(course.id);
+      }
+      
+      // 重新加载示例数据
+      await this.loadSampleData();
+    });
+  }
+  
   // 节次相关操作
   async getLessonsByCourse(courseId: number): Promise<Lesson[]> {
     const course = await this.getCourseById(courseId);
@@ -242,6 +324,26 @@ export class IndexedDBRepository implements IDataRepository {
       completedSentences,
       averageAccuracy,
     };
+  }
+
+  // 公共方法：修复用户课程ID计数器（用于修复错误的ID序列）
+  async fixUserCourseIdCounter(): Promise<void> {
+    const allCourses = await this.db.courses.toArray();
+    
+    // 找到所有用户课程中的最大ID
+    const userCourses = allCourses.filter(course => 
+      !IndexedDBRepository.isSystemReservedId(course.id)
+    );
+    
+    let nextId = IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min;
+    
+    if (userCourses.length > 0) {
+      const maxUserCourseId = Math.max(...userCourses.map(course => course.id));
+      nextId = Math.max(nextId, maxUserCourseId + 1);
+    }
+    
+    // 更新nextCourseId记录
+    await this.db.metadata.put({ key: "nextCourseId", value: nextId });
   }
 
   // 私有辅助方法
