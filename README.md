@@ -25,7 +25,7 @@
 
 
 ### AI课程生成
-![AI课程生成](screenshots/ai-course-generation.jpg)
+![AI课程生成](screenshots/ai-course-generation.png)
 
 ## 技术栈
 
