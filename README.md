@@ -37,11 +37,11 @@ npm start
 
 ### 构建打包
 ```bash
-# 打包应用
-npm run package
+# 构建应用
+npm run build
 
-# 构建安装包
-npm run make
+# 生成安装包
+npm run dist
 ```
 
 ## 项目结构
