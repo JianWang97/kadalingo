@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CourseStatsService } from "../services/courseStatsService";
+import { CourseStatsService } from "./courseStatsService";
 import { Course, LearningProgress } from "../../data/types";
 import { IDataRepository } from "../../data/interfaces/dataRepository";
 import { TestUtils } from "../../test/testUtils";
-
 // Mock 数据
 const mockCourses: Course[] = [
   {
@@ -85,7 +84,9 @@ describe("CourseStatsService", () => {
 
   describe("getCourseStats", () => {
     it("应该返回正确的课程统计信息", async () => {
-      const stats = await service.getCourseStats();      expect(stats).toEqual({
+      const stats = await service.getCourseStats();
+
+      expect(stats).toEqual({
         totalCourses: 2,
         completedCourses: 0, // 没有完全完成的课程
         inProgressCourses: 2, // 两个课程都有进度
@@ -178,7 +179,7 @@ describe("CourseStatsService", () => {
 
   describe("getLearningProgressPercentage", () => {
     it("应该返回正确的学习进度百分比", async () => {
-      const percentage = await service.getLearningProgressPercentage();      // 总课时数: 8, 完成课时数: 2
+      const percentage = await service.getLearningProgressPercentage(); // 总课时数: 8, 完成课时数: 2
       // 进度百分比: (2/8) * 100 = 25
       expect(percentage).toBe(25);
     });
