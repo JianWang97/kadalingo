@@ -31,7 +31,11 @@
     "pack": "npm run build:prod && electron-builder --dir",
     "web:dev": "vite --config vite.web.config.ts",
     "web:build": "vite build --config vite.web.config.ts",
-    "web:preview": "vite preview --config vite.web.config.ts",
+    "web:preview": "vite preview --config vite.web.config.ts",    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
     "lint": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --ext .ts,.tsx . --fix",
     "type-check": "tsc --noEmit",
@@ -71,7 +75,11 @@
     "terser": "^5.36.0",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vitest": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "jsdom": "^24.0.0"
   },
   "dependencies": {
     "dexie": "^4.0.11",

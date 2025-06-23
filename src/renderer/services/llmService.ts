@@ -170,15 +170,14 @@ export class LLMService {
             try {
               const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
               if (jsonMatch && braceCount === 0) {
-                const courseData: RawCourse = JSON.parse(jsonMatch[0]);
-
-                // 发送完整的课程数据
+                const courseData: RawCourse = JSON.parse(jsonMatch[0]);                // 发送完整的课程数据
                 const completeChunk: StreamChunk = {
                   type: "complete",
                   data: {
                     title: courseData.title,
                     description: courseData.description,
-                    level: courseData.level,                    sentences: courseData.sentences.map((s) => ({
+                    level: courseData.level,
+                    sentences: courseData.sentences.map((s) => ({
                       chinese: s.chinese,
                       english: s.english,
                       phonetic: s.phonetic,
@@ -220,9 +219,9 @@ export class LLMService {
                       const progress = Math.min(
                         90,
                         30 + (partial.sentences.length / sentenceCount) * 60
-                      );
-                      yield {
-                        type: "sentence",                        data: {
+                      );                      yield {
+                        type: "sentence",
+                        data: {
                           chinese: sentence.chinese,
                           english: sentence.english,
                           phonetic: sentence.phonetic,

@@ -26,6 +26,10 @@ coverage
 # nyc test coverage
 .nyc_output
 
+# Vitest
+.vitest/
+coverage/
+
 # node-waf configuration
 .lock-wscript
 
@@ -100,5 +104,5 @@ dist/
 
 dist-web/
 
-.npmrc
+
 
