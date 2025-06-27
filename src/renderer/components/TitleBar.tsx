@@ -11,6 +11,9 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
   const inElectron = isElectron();
   const [currentTime, setCurrentTime] = useState<string>("");
   const [starCount, setStarCount] = useState<number | null>(null);
+  const [showStarTip, setShowStarTip] = useState(() => {
+    return localStorage.getItem("hideStarTip") !== "1";
+  });
 
   // 更新时间
   useEffect(() => {
@@ -103,7 +106,27 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
           <span className="ml-1 text-yellow-500 font-semibold">
             ★ {starCount !== null ? starCount : "-"}
           </span>
-          <span className="ml-2 text-xs text-gray-400 select-none" title="求star">🥺 求个 Star~</span>
+          {showStarTip && (
+            <span
+              className="ml-2 text-xs text-gray-400 select-none flex items-center"
+              title="求star"
+            >
+              🥺 求个 Star~
+              <button
+                className="ml-1 px-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+                style={{ fontSize: "12px", lineHeight: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowStarTip(false);
+                  localStorage.setItem("hideStarTip", "1");
+                }}
+                title="不再提示"
+              >
+                ×
+              </button>
+            </span>
+          )}
         </a>
       </div>
       {/* 中间：状态信息（可选） */}
