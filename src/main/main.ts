@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, globalShortcut, shell } from 'electron';
 import path from 'node:path';
 
 let mainWindow: BrowserWindow;
@@ -88,6 +88,11 @@ ipcMain.handle('is-floating-mode', () => {
   return isFloatingMode;
 });
 
+ipcMain.handle('open-external-link', (_event, url: string) => {
+  if (url) {
+    shell.openExternal(url);
+  }
+});
 
 const createWindow = () => {
   // Create the browser window.

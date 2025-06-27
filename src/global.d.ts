@@ -11,6 +11,7 @@ declare global {
       isMaximized: () => Promise<boolean>;
       toggleFloatingMode: () => Promise<boolean>;
       isFloatingMode: () => Promise<boolean>;
+      openExternalLink: (url: string) => Promise<void>;
     };
   }
 }

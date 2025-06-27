@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   toggleFloatingMode: () => ipcRenderer.invoke('toggle-floating-mode'),
   isFloatingMode: () => ipcRenderer.invoke('is-floating-mode'),
+  openExternalLink: (url: string) => ipcRenderer.invoke('open-external-link', url),
 });
