@@ -58,7 +58,7 @@ ipcMain.handle('toggle-floating-mode', () => {
     // 切换到长条飘窗模式
     mainWindow.setSize(floatingWidth, floatingHeight);
     mainWindow.setPosition(floatingX, floatingY);
-    mainWindow.setAlwaysOnTop(true);
+    mainWindow.setAlwaysOnTop(true, "pop-up-menu");
     mainWindow.setSkipTaskbar(true);
     mainWindow.setResizable(true);
     
