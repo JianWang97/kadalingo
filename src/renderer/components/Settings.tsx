@@ -932,9 +932,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <p>语言学习练习工具</p>
-                  <p>版本: 1.0.0</p>
-                  <p>基于 Electron + React 构建</p>
+                  <p>版本: 1.0.3</p>
                 </div>
               </div>
             </div>
