@@ -61,6 +61,12 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("speech");
 
+  // 导入导出状态
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+
   // Toast 工具函数
   const showToast = (
     message: string,
@@ -524,6 +530,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 clipRule="evenodd"
               />
             </svg>
+
           </div>
           <div>
             <h3 className="text-sm font-medium text-red-800">语音功能不可用</h3>
@@ -760,9 +767,8 @@ export const Settings: React.FC<SettingsProps> = ({
                     <path
                       fillRule="evenodd"
                       d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                      />
+                    </svg>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-yellow-800">
@@ -889,6 +895,95 @@ export const Settings: React.FC<SettingsProps> = ({
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               通用设置
             </h3>
+
+            {/* 导入导出设置 */}
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm font-medium text-gray-700">数据导入/导出</span>
+                <p className="text-xs text-gray-500 mt-1">导出或导入所有应用数据（包括所有 IndexDB 数据）</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    setIsExporting(true);
+                    try {
+                      // 导出所有 IndexedDB 数据
+                      const exportAllIndexedDB = async () => {
+                        const dbs = await window.indexedDB.databases();
+                        const result: Record<string, any> = {};
+                        for (const dbInfo of dbs) {
+                          const dbName = dbInfo.name;
+                          if (!dbName) continue;
+                          const req = window.indexedDB.open(dbName);
+                          await new Promise((resolve, reject) => {
+                            req.onsuccess = () => {
+                              const db = req.result;
+                              const tx = db.transaction(db.objectStoreNames, "readonly");
+                              const stores: Record<string, any[]> = {};
+                              let pending = db.objectStoreNames.length;
+                              if (pending === 0) {
+                                db.close();
+                                resolve(null);
+                              }
+                              for (const storeName of db.objectStoreNames) {
+                                const store = tx.objectStore(storeName);
+                                const getAllReq = store.getAll();
+                                getAllReq.onsuccess = () => {
+                                  stores[storeName] = getAllReq.result;
+                                  pending--;
+                                  if (pending === 0) {
+                                    db.close();
+                                    result[dbName] = stores;
+                                    resolve(null);
+                                  }
+                                };
+                                getAllReq.onerror = reject;
+                              }
+                            };
+                            req.onerror = reject;
+                          });
+                        }
+                        return result;
+                      };
+                      const data = await exportAllIndexedDB();
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `kadalingo-indexeddb-backup-${Date.now()}.json`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      showToast("导出成功", "success");
+                    } catch (e) {
+                      showToast("导出失败: " + (e as Error).message, "error");
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 ${isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={isExporting}
+                >
+                  {isExporting ? '导出中…' : '导出数据'}
+                </button>
+                <label className={`px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 cursor-pointer ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                  {isImporting ? '导入中…' : '导入数据'}
+                  <input
+                    type="file"
+                    accept="application/json"
+                    style={{ display: "none" }}
+                    disabled={isImporting}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setImportFile(file);
+                      setShowImportConfirm(true);
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
 
             {/* 重置设置 */}
             <div className="space-y-4">
@@ -1312,6 +1407,83 @@ export const Settings: React.FC<SettingsProps> = ({
         type={toast.type}
         onClose={hideToast}
       />
+      {/* 导入确认弹窗 */}
+      <Modal
+        isOpen={showImportConfirm}
+        onClose={() => {
+          setShowImportConfirm(false);
+          setImportFile(null);
+        }}
+        title="确认导入"
+        maxWidth="max-w-sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">导入数据将覆盖现有的所有 IndexDB 数据，确定继续吗？</p>
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                if (!importFile) return;
+                setIsImporting(true);
+                setShowImportConfirm(false);
+                try {
+                  const text = await importFile.text();
+                  const data = JSON.parse(text);
+                  // 导入所有 IndexedDB 数据
+                  const importAllIndexedDB = async (data: Record<string, any>) => {
+                    for (const dbName in data) {
+                      const dbData = data[dbName];
+                      const req = window.indexedDB.open(dbName);
+                      await new Promise((resolve, reject) => {
+                        req.onsuccess = () => {
+                          const db = req.result;
+                          const tx = db.transaction(db.objectStoreNames, "readwrite");
+                          for (const storeName of db.objectStoreNames) {
+                            const store = tx.objectStore(storeName);
+                            // 清空原有数据
+                            store.clear();
+                            // 写入新数据
+                            const items = dbData[storeName] || [];
+                            for (const item of items) {
+                              try { store.add(item); } catch { /* ignore */ }
+                            }
+                          }
+                          tx.oncomplete = () => {
+                            db.close();
+                            resolve(null);
+                          };
+                          tx.onerror = reject;
+                        };
+                        req.onerror = reject;
+                      });
+                    }
+                  };
+                  await importAllIndexedDB(data);
+                  showToast("导入成功", "success");
+                } catch (e) {
+                  showToast("导入失败: " + (e as Error).message, "error");
+                } finally {
+                  setIsImporting(false);
+                  setImportFile(null);
+                }
+              }}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              disabled={isImporting}
+            >
+              确认导入
+            </button>
+            <button
+              onClick={() => {
+                setShowImportConfirm(false);
+                setImportFile(null);
+              }}
+              className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isImporting}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
