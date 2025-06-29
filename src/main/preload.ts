@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleFloatingMode: () => ipcRenderer.invoke('toggle-floating-mode'),
   isFloatingMode: () => ipcRenderer.invoke('is-floating-mode'),
   openExternalLink: (url: string) => ipcRenderer.invoke('open-external-link', url),
+  setAlwaysOnTop: (value: boolean) => ipcRenderer.invoke('set-always-on-top', value),
 });

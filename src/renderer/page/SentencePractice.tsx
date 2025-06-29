@@ -11,6 +11,24 @@ import { useFloatingMode } from "../hooks/useFloatingMode";
 import { Settings } from "../components/Settings";
 import { ProgressService } from "../services/progressService";
 
+// 移动端检测 hook
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  return isMobile;
+};
+
 interface SentencePracticeProps {
   selectedCourse?: Course | null;
 }
@@ -18,6 +36,9 @@ interface SentencePracticeProps {
 const SentencePractice: React.FC<SentencePracticeProps> = ({
   selectedCourse,
 }) => {
+  // 移动端检测
+  const isMobile = useIsMobile();
+
   // 课程和课时相关状态
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
@@ -1056,64 +1077,92 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           </div>
         </div>
       )}
-      {/* 简约的底部操作栏 - 小飘窗模式下隐藏 */}
+      {/* 底部操作栏 - 适配移动端 */}
       {!isFloating && (
-        <div className="flex w-full bg-white border-t border-gray-200 px-6 py-4">
+        <div className={`
+          flex w-full bg-white border-t border-gray-200 px-4 py-3
+          md:px-6 md:py-4
+          ${isMobile ? "pb-20" : ""} // 在移动端添加底部间距
+        `}>
           <div className="w-full flex items-center justify-between">
-            {/* 左侧和中间的按钮 */}
-            <div className="flex items-center justify-center gap-3 flex-1">
+            <div className={`
+              flex items-center justify-center gap-2 md:gap-3 flex-wrap
+              ${isMobile ? "w-full" : "flex-1"}
+            `}>
+              {/* 播放按钮 */}
               <button
                 onClick={handleSpeakEnglish}
                 disabled={isPlaying}
-                className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
+                className={`
+                  px-3 py-1.5 md:px-4 md:py-2
+                  bg-white text-gray-700 text-sm rounded-lg
+                  hover:bg-gray-50 disabled:opacity-50 transition-colors
+                  flex items-center gap-1 md:gap-2
+                  border border-gray-200 no-drag
+                  ${isMobile ? "flex-1" : ""}
+                `}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>{" "}
-                <span>播放</span>{" "}
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                  Ctrl+P
-                </span>
-              </button>{" "}
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.776L4.36 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.36l4.023-3.776zM15.657 6.343a1 1 0 011.414 0A8.971 8.971 0 0119 12a8.971 8.971 0 01-1.929 5.657 1 1 0 11-1.414-1.414A6.971 6.971 0 0017 12a6.971 6.971 0 00-1.343-4.243 1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                <span>播放</span>
+                {!isMobile && (
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                    Ctrl+P
+                  </span>
+                )}
+              </button>
+
+              {/* 显示答案按钮 */}
               {(isCorrect === null || isCorrect === false) && (
-                <>
-                  <button
-                    onClick={() => showCorrectAnswer().catch(console.error)}
-                    className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
-                  >
-                    {" "}
-                    <span>显示答案</span>
+                <button
+                  onClick={() => showCorrectAnswer().catch(console.error)}
+                  className={`
+                    px-3 py-1.5 md:px-4 md:py-2
+                    bg-white text-gray-700 text-sm rounded-lg
+                    hover:bg-gray-50 transition-colors
+                    flex items-center gap-1 md:gap-2
+                    border border-gray-200 no-drag
+                    ${isMobile ? "flex-1" : ""}
+                  `}
+                >
+                  <span>显示答案</span>
+                  {!isMobile && (
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
                       Ctrl+H
                     </span>
-                  </button>
-                </>
-              )}{" "}
+                  )}
+                </button>
+              )}
+
+              {/* 下一句按钮 */}
               {isCorrect === true && (
                 <button
                   onClick={nextSentence}
-                  className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 no-drag"
+                  className={`
+                    px-3 py-1.5 md:px-4 md:py-2
+                    bg-purple-600 text-white text-sm rounded-lg
+                    hover:bg-purple-700 transition-colors
+                    flex items-center gap-1 md:gap-2 no-drag
+                    ${isMobile ? "flex-1" : ""}
+                  `}
                 >
                   <span>下一句</span>
-                  <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
-                    空格
-                  </span>
+                  {!isMobile && (
+                    <span className="text-xs bg-purple-500 px-2 py-1 rounded text-purple-100">
+                      空格
+                    </span>
+                  )}
                 </button>
-              )}{" "}
-              {window.electronAPI?.toggleFloatingMode && (
+              )}
+
+              {/* 切换窗口化按钮 - 移动端隐藏 */}
+              {!isMobile && window.electronAPI?.toggleFloatingMode && (
                 <button
                   onClick={() => window.electronAPI?.toggleFloatingMode?.()}
                   className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
                 >
-                  <span>切换窗口化</span>{" "}
+                  <span>切换窗口化</span>
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
                     Ctrl+Shift+P
                   </span>
@@ -1132,7 +1181,7 @@ export default SentencePractice;
 // 辅助函数：去除单双引号
 const normalizeWord = (word: string) => {
   return word
-    .replace(/[‘’“”'"\u2018\u2019\u201C\u201D]/g, "")
+    .replace(/[‘’"”'"\u2018\u2019\u201C\u201D]/g, "")
     .trim()
     .toLowerCase();
 };

@@ -103,7 +103,6 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
           <span className="ml-1 text-yellow-500 font-semibold">
             ★ {starCount !== null ? starCount : "-"}
           </span>
-          <span className="ml-2 text-xs text-gray-400 select-none" title="求star">🥺 求个 Star~</span>
         </a>
       </div>
       {/* 中间：状态信息（可选） */}

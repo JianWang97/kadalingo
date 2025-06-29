@@ -29,7 +29,9 @@ export const FloatingModeProvider: React.FC<FloatingModeProviderProps> = ({ chil
         // 如果解析失败，使用默认值
       }
     }
-    return { opacity: 0.3 }; // 默认30%不透明度
+    return {
+      opacity: 0.3
+    };
   });
 
   // 保存设置到localStorage

@@ -18,6 +18,7 @@ import { useFloatingModeSettings } from "../contexts/FloatingModeContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { useLLM, type LLMSettings } from "../contexts/LLMContext";
 import { Modal, Toast } from "./common";
+import { isElectron } from "../utils/environment";
 
 interface SettingsProps {
   className?: string;
@@ -145,6 +146,27 @@ export const Settings: React.FC<SettingsProps> = ({
       setEditingLLMSettings(null);
     } catch (error) {
       showToast("保存失败：" + (error as Error).message, "error");
+    }
+  };
+
+  // 窗口控制函数
+  const handleMinimize = async () => {
+    if (!isElectron() || !window.electronAPI?.minimize) return;
+    try {
+      await window.electronAPI.minimize();
+    } catch (error) {
+      console.error("Failed to minimize window:", error);
+      showToast("最小化窗口失败", "error");
+    }
+  };
+
+  const handleMaximize = async () => {
+    if (!isElectron() || !window.electronAPI?.maximize) return;
+    try {
+      await window.electronAPI.maximize();
+    } catch (error) {
+      console.error("Failed to maximize window:", error);
+      showToast("最大化窗口失败", "error");
     }
   };
 
@@ -485,7 +507,7 @@ export const Settings: React.FC<SettingsProps> = ({
   // 标签页定义
   const tabs = [
     { id: "speech" as SettingsTab, name: "语音设置", icon: "🔊" },
-    { id: "interface" as SettingsTab, name: "界面设置", icon: "🎨" },
+    ...(isElectron() ? [{ id: "interface" as SettingsTab, name: "界面设置", icon: "🎨" }] : []),
     { id: "keyboard" as SettingsTab, name: "键盘声音", icon: "⌨️" },
     { id: "llm" as SettingsTab, name: "LLM配置", icon: "🤖" },
     { id: "general" as SettingsTab, name: "通用设置", icon: "⚙️" },
@@ -547,155 +569,130 @@ export const Settings: React.FC<SettingsProps> = ({
       case "speech":
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              语音设置
-            </h3>
-
-            {/* 启用/禁用语音功能 */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium text-gray-700">
-                  启用语音功能
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  开启后可以播放句子的语音
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.enabled}
-                  onChange={(e) =>
-                    updateSettings({ enabled: e.target.checked })
-                  }
-                  className="sr-only"
-                />
-                <div
-                  className={`w-11 h-6 rounded-full transition-colors ${
-                    settings.enabled ? "bg-purple-600" : "bg-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                      settings.enabled ? "translate-x-5" : "translate-x-0.5"
-                    } mt-0.5`}
-                  />
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">语音设置</h3>
+            <div className="space-y-6">
+              {/* 启用/禁用语音 */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">启用语音</span>
+                  <p className="text-xs text-gray-500 mt-1">开启或关闭语音功能</p>
                 </div>
-              </label>
-            </div>
-
-            {/* 自动播放设置 */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-medium text-gray-700">
-                  自动播放英文
-                </span>
-                <p className="text-xs text-gray-500 mt-1">
-                  显示新句子时自动播放语音
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.autoPlay}
-                  onChange={(e) =>
-                    updateSettings({ autoPlay: e.target.checked })
-                  }
-                  disabled={!settings.enabled}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-11 h-6 rounded-full transition-colors ${
-                    settings.autoPlay && settings.enabled
-                      ? "bg-purple-600"
-                      : "bg-gray-200"
-                  } ${!settings.enabled ? "opacity-50" : ""}`}
-                >
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.enabled}
+                    onChange={(e) => updateSettings({ enabled: e.target.checked })}
+                    className="sr-only"
+                  />
                   <div
-                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                    className={`w-11 h-6 rounded-full transition-colors ${
+                      settings.enabled ? "bg-purple-600" : "bg-gray-200"
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                        settings.enabled ? "translate-x-5" : "translate-x-0.5"
+                      } mt-0.5`}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {/* 自动播放设置 */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">自动播放英文</span>
+                  <p className="text-xs text-gray-500 mt-1">显示新句子时自动播放语音</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.autoPlay}
+                    onChange={(e) => updateSettings({ autoPlay: e.target.checked })}
+                    disabled={!settings.enabled}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-11 h-6 rounded-full transition-colors ${
                       settings.autoPlay && settings.enabled
-                        ? "translate-x-5"
-                        : "translate-x-0.5"
-                    } mt-0.5`}
+                        ? "bg-purple-600"
+                        : "bg-gray-200"
+                    } ${!settings.enabled ? "opacity-50" : ""}`}
+                  >
+                    <div
+                      className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                        settings.autoPlay && settings.enabled
+                          ? "translate-x-5"
+                          : "translate-x-0.5"
+                      } mt-0.5`}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {/* 语音速度设置 */}
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">语音速度</span>
+                    <p className="text-xs text-gray-500 mt-1">调整语音播放的速度</p>
+                  </div>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {settings.rate.toFixed(1)}x
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={settings.rate}
+                    onChange={(e) => updateSettings({ rate: Number(e.target.value) })}
+                    disabled={!settings.enabled}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
+                      [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
+                      [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                   />
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>慢 (0.5x)</span>
+                    <span>快 (2.0x)</span>
+                  </div>
                 </div>
-              </label>
-            </div>
+              </div>
 
-            {/* 语音速度设置 */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    语音速度
+              {/* 音量设置 */}
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">音量</span>
+                    <p className="text-xs text-gray-500 mt-1">调整语音播放的音量</p>
+                  </div>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {Math.round(settings.volume * 100)}%
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    调整语音播放的速度
-                  </p>
                 </div>
-                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {settings.rate.toFixed(1)}x
-                </span>
-              </div>
-              <div className="space-y-2">
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  value={settings.rate}
-                  onChange={(e) =>
-                    updateSettings({ rate: Number(e.target.value) })
-                  }
-                  disabled={!settings.enabled}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
-                    [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
-                />
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>慢 (0.5x)</span>
-                  <span>快 (2.0x)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 音量设置 */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    音量
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    调整语音播放的音量
-                  </p>
-                </div>
-                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {Math.round(settings.volume * 100)}%
-                </span>
-              </div>
-              <div className="space-y-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={settings.volume}
-                  onChange={(e) =>
-                    updateSettings({ volume: Number(e.target.value) })
-                  }
-                  disabled={!settings.enabled}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
-                    [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
-                />
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>静音 (0%)</span>
-                  <span>最大 (100%)</span>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={settings.volume}
+                    onChange={(e) => updateSettings({ volume: Number(e.target.value) })}
+                    disabled={!settings.enabled}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
+                      [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
+                      [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>静音 (0%)</span>
+                    <span>最大 (100%)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -703,22 +700,19 @@ export const Settings: React.FC<SettingsProps> = ({
         );
 
       case "interface":
+        // 只在桌面端显示界面设置
+        if (!isElectron()) return null;
+        
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              界面设置
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">界面设置</h3>
 
             {/* 浮窗透明度设置 */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    浮窗透明度
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    调整悬浮窗口的透明度
-                  </p>
+                  <span className="text-sm font-medium text-gray-700">浮窗透明度</span>
+                  <p className="text-xs text-gray-500 mt-1">调整悬浮窗口的透明度</p>
                 </div>
                 <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
                   {Math.round(floatingSettings.opacity * 100)}%
@@ -735,14 +729,44 @@ export const Settings: React.FC<SettingsProps> = ({
                     updateFloatingSettings({ opacity: Number(e.target.value) })
                   }
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                     [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
-                    [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
+                    [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
                     [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>透明 (0%)</span>
                   <span>不透明 (100%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 窗口控制 */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">窗口控制</span>
+                  <p className="text-xs text-gray-500 mt-1">窗口控制选项</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleMinimize}
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="最小化"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                      <path d="M4 10h12" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleMaximize}
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="最大化"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                      <rect x="4" y="4" width="12" height="12" strokeWidth="2" rx="2"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -752,44 +776,15 @@ export const Settings: React.FC<SettingsProps> = ({
       case "keyboard":
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              键盘声音
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">键盘声音</h3>
 
-            {!isKeyboardSoundSupported ? (
-              <div className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-5 h-5 text-yellow-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      />
-                    </svg>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-800">
-                    键盘声音不可用
-                  </h4>
-                  <p className="text-sm text-yellow-700">
-                    当前环境不支持键盘音效功能
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
+            {isKeyboardSoundSupported ? (
+              <div className="space-y-6">
                 {/* 启用/禁用键盘声音 */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">
-                      启用按键声音
-                    </span>
-                    <p className="text-xs text-gray-500 mt-1">
-                      输入时播放按键音效
-                    </p>
+                    <span className="text-sm font-medium text-gray-700">启用按键声音</span>
+                    <p className="text-xs text-gray-500 mt-1">输入时播放按键音效</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -807,9 +802,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     >
                       <div
                         className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                          keyboardSettings.enabled
-                            ? "translate-x-5"
-                            : "translate-x-0.5"
+                          keyboardSettings.enabled ? "translate-x-5" : "translate-x-0.5"
                         } mt-0.5`}
                       />
                     </div>
@@ -817,44 +810,35 @@ export const Settings: React.FC<SettingsProps> = ({
                 </div>
 
                 {/* 声音类型设置 */}
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-sm font-medium text-gray-700">
-                      声音类型
-                    </span>
-                    <p className="text-xs text-gray-500 mt-1">
-                      选择不同的按键音效
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">声音类型</span>
+                      <p className="text-xs text-gray-500 mt-1">选择不同的按键音效</p>
+                    </div>
+                    <select
+                      value={keyboardSettings.soundType}
+                      onChange={(e) =>
+                        updateKeyboardSettings({
+                          soundType: e.target.value as "mechanical" | "soft" | "typewriter",
+                        })
+                      }
+                      disabled={!keyboardSettings.enabled}
+                      className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
+                    >
+                      <option value="mechanical">机械键盘</option>
+                      <option value="soft">柔和声音</option>
+                      <option value="typewriter">打字机</option>
+                    </select>
                   </div>
-                  <select
-                    value={keyboardSettings.soundType}
-                    onChange={(e) =>
-                      updateKeyboardSettings({
-                        soundType: e.target.value as
-                          | "mechanical"
-                          | "soft"
-                          | "typewriter",
-                      })
-                    }
-                    disabled={!keyboardSettings.enabled}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="mechanical">机械键盘</option>
-                    <option value="soft">柔和声音</option>
-                    <option value="typewriter">打字机</option>
-                  </select>
                 </div>
 
                 {/* 键盘声音音量设置 */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        按键音量
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        调整按键音效的音量
-                      </p>
+                      <span className="text-sm font-medium text-gray-700">按键音量</span>
+                      <p className="text-xs text-gray-500 mt-1">调整按键音效的音量</p>
                     </div>
                     <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
                       {Math.round(keyboardSettings.volume * 100)}%
@@ -874,9 +858,9 @@ export const Settings: React.FC<SettingsProps> = ({
                       }
                       disabled={!keyboardSettings.enabled}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
-                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                         [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
-                        [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
+                        [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
                         [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                     />
                     <div className="flex justify-between text-xs text-gray-400">
@@ -885,10 +869,21 @@ export const Settings: React.FC<SettingsProps> = ({
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">当前平台不支持键盘声音</h4>
+                <p className="text-xs text-gray-500">请在桌面端使用此功能</p>
+              </div>
             )}
           </div>
         );
+
       case "general":
         return (
           <div className="space-y-6">
@@ -1043,39 +1038,37 @@ export const Settings: React.FC<SettingsProps> = ({
   };
   return (
     <>
-      <div className={`flex h-full bg-white overflow-hidden ${className}`}>
-        {/* 左侧标签页 */}
-        <div
-          className="w-48 bg-gray-50 border-gray-200 flex flex-col h-full overflow-hidden"
-          style={{ height: "450px" }}
-        >
-          <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <div className={`flex flex-col md:flex-row h-full bg-white overflow-hidden ${className}`}>
+        {/* 左侧标签页 - 在移动端变为顶部标签栏 */}
+        <div className="w-full md:w-48 bg-gray-50 border-gray-200 flex flex-col overflow-hidden">
+          <nav className="flex md:flex-col p-2 space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto md:overflow-y-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
+                  ${activeTab === tab.id
                     ? "bg-purple-100 text-purple-700"
                     : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 <span className="text-base">{tab.icon}</span>
-                <span>{tab.name}</span>
+                <span className="hidden md:inline">{tab.name}</span>
               </button>
             ))}
           </nav>
-        </div>{" "}
+        </div>
+
         {/* 右侧内容区域 */}
-        <div
-          className="flex-1 flex flex-col overflow-hidden"
-          style={{ height: "450px" }}
-        >
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="h-full">{renderTabContent()}</div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="max-w-2xl mx-auto">
+              {renderTabContent()}
+            </div>
           </div>
         </div>
-      </div>{" "}
+      </div>
+
       {/* LLM 配置 Modal */}
       <Modal
         isOpen={showLLMModal}

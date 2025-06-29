@@ -12,8 +12,39 @@ declare global {
       toggleFloatingMode: () => Promise<boolean>;
       isFloatingMode: () => Promise<boolean>;
       openExternalLink: (url: string) => Promise<void>;
+      setAlwaysOnTop: (value: boolean) => Promise<void>;
     };
   }
+}
+
+declare module "*.svg" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.png" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.jpg" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.jpeg" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.gif" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.webp" {
+  const content: string;
+  export default content;
 }
 
 export {};

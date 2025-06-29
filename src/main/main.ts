@@ -94,6 +94,12 @@ ipcMain.handle('open-external-link', (_event, url: string) => {
   }
 });
 
+// 窗口置顶控制
+ipcMain.handle('set-always-on-top', (_event, value: boolean) => {
+  if (!mainWindow) return;
+  mainWindow.setAlwaysOnTop(value);
+});
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
