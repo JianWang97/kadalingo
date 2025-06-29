@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MdSchool, MdEdit, MdSmartToy, MdSettings } from "react-icons/md";
 
 interface SidebarProps {
@@ -35,16 +35,139 @@ const menuItems: MenuItem[] = [
   },
 ];
 
+// 检测是否为移动设备
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  return isMobile;
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
   currentPage,
   onPageChange,
   onOpenSettings,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
-  const handleMouseEnter = () => setIsExpanded(true);
-  const handleMouseLeave = () => setIsExpanded(false);
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setIsExpanded(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (!isMobile) {
+      setIsExpanded(false);
+    }
+  };
 
+  // 移动端底部导航栏
+  if (isMobile) {
+    return (
+      <nav
+        className="
+          fixed bottom-0 left-0 right-0 z-50
+          bg-white dark:bg-gray-900
+          border-t border-gray-200 dark:border-gray-700
+          shadow-lg backdrop-blur-sm
+          px-2 py-2
+        "
+        role="navigation"
+        aria-label="底部导航"
+      >
+        <div className="flex items-center justify-around space-x-1">
+          {menuItems.map((item) => {
+            const isActive = currentPage === item.id;
+            const isAI = item.id === "add";
+            return (
+              <button
+                key={item.id}
+                onClick={() => onPageChange(item.id)}
+                className={`
+                  flex flex-col items-center justify-center
+                  flex-1 py-2 px-1 rounded-lg
+                  transition-all duration-200 ease-out
+                  touch-manipulation
+                  ${isAI 
+                    ? isActive 
+                      ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30" 
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                    : isActive 
+                      ? "bg-purple-100 dark:bg-purple-900/30" 
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }
+                `}
+                role="menuitem"
+                aria-current={isActive ? "page" : undefined}
+              >
+                <div className="relative">
+                  <item.icon
+                    className={`
+                      w-6 h-6 transition-colors duration-200
+                      ${isAI 
+                        ? "text-purple-500 drop-shadow-sm" 
+                        : isActive 
+                          ? "text-purple-600 dark:text-purple-400" 
+                          : "text-gray-600 dark:text-gray-400"
+                      }
+                    `}
+                  />
+                  {isActive && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+                  )}
+                </div>
+                <span
+                  className={`
+                    text-xs mt-1 font-medium
+                    ${isAI 
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600" 
+                      : isActive 
+                        ? "text-purple-600 dark:text-purple-400" 
+                        : "text-gray-600 dark:text-gray-400"
+                    }
+                  `}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+          
+          {/* 设置按钮 */}
+          <button
+            onClick={onOpenSettings}
+            className="
+              flex flex-col items-center justify-center
+              flex-1 py-2 px-1 rounded-lg
+              transition-all duration-200 ease-out
+              touch-manipulation
+              hover:bg-gray-50 dark:hover:bg-gray-800
+            "
+            role="menuitem"
+          >
+            <MdSettings className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <span className="text-xs mt-1 font-medium text-gray-600 dark:text-gray-400">
+              设置
+            </span>
+          </button>
+        </div>
+      </nav>
+    );
+  }
+
+  // 桌面端侧边栏
   return (
     <aside
       className={`
@@ -60,8 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       role="navigation"
       aria-label="主导航"
     >
-      {" "}
-      {/* Navigation Menu */}{" "}
+      {/* Navigation Menu */}
       <nav className={`flex-1 p-3 space-y-2`} role="menu">
         {menuItems.map((item) => {
           const isActive = currentPage === item.id;
@@ -69,7 +191,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onPageChange(item.id)}              className={`
+              onClick={() => onPageChange(item.id)}
+              className={`
                 w-full flex items-center rounded-xl
                 transition-all duration-300 ease-out
                 ${isExpanded ? "p-3" : "p-0"}
@@ -87,8 +210,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               role="menuitem"
               aria-current={isActive ? "page" : undefined}
             >
-              {" "}
-              {/* Icon */}{" "}              <div
+              {/* Icon */}
+              <div
                 className={`
                   flex-shrink-0 flex items-center justify-center
                   transition-all duration-300
@@ -158,11 +281,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
-      </nav>{" "}
-      {/* Settings Button */}{" "}
+      </nav>
+      
+      {/* Settings Button */}
       <footer className={`${isExpanded ? "p-3" : "p-3"}`}>
         <button
-          onClick={onOpenSettings}          className={`
+          onClick={onOpenSettings}
+          className={`
             w-full flex items-center rounded-xl
             transition-all duration-300 ease-out
             ${isExpanded ? "p-3" : "p-1"}
@@ -171,8 +296,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title={!isExpanded ? "设置" : undefined}
           role="menuitem"
         >
-          {" "}
-          {/* Icon */}{" "}          <div
+          {/* Icon */}
+          <div
             className={`
             flex-shrink-0 flex items-center justify-center
             transition-all duration-300
