@@ -1,7 +1,7 @@
 {
   "name": "click-lingo",
   "productName": "咔哒",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "🚀 咔哒 - 一个用于语言学习的句子练习工具",
   "main": "dist/main.js",
   "homepage": "https://github.com/JianWang97/kadalingo",
