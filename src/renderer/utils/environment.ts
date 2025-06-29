@@ -3,12 +3,8 @@
  */
 
 // 检测是否在 Electron 环境中运行
-export const isElectron = (): boolean => {
-  return (
-    typeof window !== 'undefined' &&
-    window.electronAPI !== undefined &&
-    typeof window.electronAPI === 'object'
-  );
+export const isElectron = () => {
+  return window.electronAPI !== undefined;
 };
 
 // 检测是否在 Web 环境中运行
@@ -38,4 +34,20 @@ export const getAppTitle = (): string => {
     return `${baseTitle} - Web版`;
   }
   return baseTitle;
+};
+
+// 检查是否是 Windows 系统
+export const isWindows = () => {
+  return navigator.platform.indexOf('Win') > -1;
+};
+
+// 获取应用版本号
+export const getAppVersion = () => {
+  return '1.0.3'; // 从 package.json 中读取
+};
+
+// 获取桌面版下载链接
+export const getDesktopDownloadUrl = () => {
+  const version = getAppVersion();
+  return `https://download.kadalingo.top/kadalingo-${version}-Setup.exe`;
 };

@@ -18,7 +18,7 @@ import { useFloatingModeSettings } from "../contexts/FloatingModeContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { useLLM, type LLMSettings } from "../contexts/LLMContext";
 import { Modal, Toast } from "./common";
-import { isElectron } from "../utils/environment";
+import { isElectron, isWindows, getDesktopDownloadUrl } from "../utils/environment";
 
 interface SettingsProps {
   className?: string;
@@ -700,8 +700,54 @@ export const Settings: React.FC<SettingsProps> = ({
         );
 
       case "interface":
-        // 只在桌面端显示界面设置
-        if (!isElectron()) return null;
+        // 在 Web 端且是 Windows 系统时，显示下载提示
+        if (!isElectron()) {
+          if (isWindows()) {
+            return (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">界面设置</h3>
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-base font-semibold text-gray-900 mb-1">
+                        桌面版功能说明
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        检测到您正在使用 Windows 系统。桌面版提供以下额外功能：
+                      </p>
+                      <ul className="text-sm text-gray-600 space-y-2 mb-4">
+                        <li className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          浮窗模式
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          窗口控制
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          透明度调节
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        }
         
         return (
           <div className="space-y-6">
