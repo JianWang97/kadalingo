@@ -104,3 +104,33 @@ jobs:
           name: build-artifacts
           path: build/
           retention-days: 7
+
+      - name: Install AWS CLI
+        if: success()
+        run: |
+          Invoke-WebRequest -Uri "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
+          Start-Process msiexec.exe -Wait -ArgumentList "/i AWSCLIV2.msi /quiet"
+          aws --version
+
+      - name: Configure AWS CLI for Cloudflare R2
+        if: success()
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set region auto
+          aws configure set endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+      - name: Upload to Cloudflare R2
+        if: success()
+        run: |
+          # 上传安装包
+          aws s3 cp "build/kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          # 上传便携版
+          aws s3 cp "build/kadalingo ${{ steps.get_version.outputs.version }}.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          # 生成并上传版本信息文件
+          $versionInfo = @{
+            latest_version = "${{ steps.get_version.outputs.version }}"
+            release_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          } | ConvertTo-Json
+          $versionInfo | Set-Content -Path version.json
+          aws s3 cp version.json "s3://${{ secrets.R2_BUCKET_NAME }}/latest-version.json"
