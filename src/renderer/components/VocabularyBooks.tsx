@@ -1,0 +1,137 @@
+import React, { useEffect, useState } from 'react';
+import { WordRecord, VocabularyStatus } from '../../data/types';
+import { vocabularyService } from '../services/vocabularyService';
+
+type TabType = 'new' | 'error' | 'mastered';
+
+interface WordListProps {
+  words: WordRecord[];
+  onMarkAsMastered?: (word: string) => void;
+}
+
+const WordList: React.FC<WordListProps> = ({ words, onMarkAsMastered }) => (
+  <div className="mt-6">
+    {words.length === 0 ? (
+      <div className="text-center py-12">
+        <p className="text-gray-500">暂无单词</p>
+      </div>
+    ) : (
+      <ul className="divide-y divide-gray-100">
+        {words.map((word) => (
+          <li key={word.id} className="py-3 flex justify-between items-center group hover:bg-gray-50 px-4 -mx-4 rounded-lg transition-colors">
+            <div className="flex items-center space-x-3">
+              <span className="font-medium text-base text-gray-900">{word.word}</span>
+              {word.translation && (
+                <span className="text-gray-600">·</span>
+              )}
+              {word.translation && (
+                <span className="text-gray-600">{word.translation}</span>
+              )}
+            </div>
+            <div className="flex items-center space-x-3">
+              {word.errorCount > 0 && (
+                <span className="text-sm text-red-500">
+                  {word.errorCount}次
+                </span>
+              )}
+              {onMarkAsMastered && word.status !== VocabularyStatus.MASTERED && (
+                <button
+                  onClick={() => onMarkAsMastered(word.word)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded"
+                >
+                  已掌握
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
+export const VocabularyBooks: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabType>('new');
+  const [newWords, setNewWords] = useState<WordRecord[]>([]);
+  const [errorWords, setErrorWords] = useState<WordRecord[]>([]);
+  const [masteredWords, setMasteredWords] = useState<WordRecord[]>([]);
+
+
+  const loadWords = async () => {
+    const [newWordsData, errorWordsData, masteredWordsData] = await Promise.all([
+      vocabularyService.getNewWords(),
+      vocabularyService.getErrorWords(),
+      vocabularyService.getMasteredWords(),
+    ]);
+
+    setNewWords(newWordsData);
+    setErrorWords(errorWordsData);
+    setMasteredWords(masteredWordsData);
+  };
+
+  useEffect(() => {
+    loadWords();
+  }, []);
+
+  const handleMarkAsMastered = async (word: string) => {
+    await vocabularyService.markWordAsMastered(word);
+    await loadWords();
+  };
+
+  const tabs = [
+    { id: 'new' as TabType, name: '生词本', count: newWords.length },
+    { id: 'error' as TabType, name: '错词本', count: errorWords.length },
+    { id: 'mastered' as TabType, name: '已掌握', count: masteredWords.length },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'new':
+        return <WordList words={newWords} onMarkAsMastered={handleMarkAsMastered} />;
+      case 'error':
+        return <WordList words={errorWords} onMarkAsMastered={handleMarkAsMastered} />;
+      case 'mastered':
+        return <WordList words={masteredWords} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* Tab 导航 */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                ${activeTab === tab.id
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              {tab.name}
+              <span
+                className={`ml-2 py-0.5 px-2 rounded-full text-xs
+                  ${activeTab === tab.id
+                    ? 'bg-purple-100 text-purple-600'
+                    : 'bg-gray-100 text-gray-600'
+                  }
+                `}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* 内容区域 */}
+      {renderContent()}
+    </div>
+  );
+}; 

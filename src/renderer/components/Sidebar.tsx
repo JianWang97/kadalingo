@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { MdSchool, MdEdit, MdSmartToy, MdSettings } from "react-icons/md";
+import { MdSchool, MdEdit, MdSmartToy, MdSettings, MdMenuBook } from "react-icons/md";
 
 interface SidebarProps {
   currentPage: string;
-  onPageChange: (page: "courses" | "practice" | "add") => void;
+  onPageChange: (page: "courses" | "practice" | "add" | "vocabulary") => void;
   onOpenSettings?: () => void;
 }
 
 interface MenuItem {
-  id: "courses" | "practice" | "add";
+  id: "courses" | "practice" | "add" | "vocabulary";
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description?: string;
+  isAI: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -19,19 +20,29 @@ const menuItems: MenuItem[] = [
     id: "courses",
     label: "课程中心",
     icon: MdSchool,
-    description: "选择学习课程",
+    description: "浏览和学习课程",
+    isAI: false,
   },
   {
     id: "practice",
     label: "句子练习",
     icon: MdEdit,
-    description: "中英文翻译练习",
+    description: "练习句子",
+    isAI: false,
+  },
+  {
+    id: "vocabulary",
+    label: "词汇本",
+    icon: MdMenuBook,
+    description: "管理生词和错词",
+    isAI: false,
   },
   {
     id: "add",
     label: "AI 智能创作",
     icon: MdSmartToy,
     description: "AI 生成课程内容",
+    isAI: true,
   },
 ];
 
@@ -90,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-around space-x-1">
           {menuItems.map((item) => {
             const isActive = currentPage === item.id;
-            const isAI = item.id === "add";
+            const isAI = item.isAI;
             return (
               <button
                 key={item.id}
@@ -187,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <nav className={`flex-1 p-3 space-y-2`} role="menu">
         {menuItems.map((item) => {
           const isActive = currentPage === item.id;
-          const isAI = item.id === "add";
+          const isAI = item.isAI;
           return (
             <button
               key={item.id}

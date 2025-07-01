@@ -7,6 +7,10 @@ import {
   SentencePair,
   LearningProgress,
   QueryParams,
+  WordRecord,
+  VocabularyBook,
+  VocabularyStatus,
+  WordMeaning
 } from "../types";
 import { sampleCourses } from "../sampleCourses";
 import { beginnerEnglishDialogueCourse } from '../beginnerEnglishDialogueCourse';
@@ -16,6 +20,8 @@ class LanguageLearningDB extends Dexie {
   courses!: Table<Course>;
   learningProgress!: Table<LearningProgress>;
   metadata!: Table<{ key: string; value: unknown }>;
+  words!: Table<WordRecord>;
+  vocabularyBooks!: Table<VocabularyBook>;
 
   constructor() {
     super('LanguageLearningDB');
@@ -24,6 +30,11 @@ class LanguageLearningDB extends Dexie {
       courses: 'id, category, difficulty, name, *tags',
       learningProgress: '[courseId+lessonId], courseId',
       metadata: 'key'
+    });
+
+    this.version(2).stores({
+      words: 'id, word, status',
+      vocabularyBooks: 'id, name, type'
     });
   }
 }
@@ -66,12 +77,37 @@ export class IndexedDBRepository implements IDataRepository {
   }
   // 辅助方法：获取并更新下一个ID
   private async getNextId(key: string, minValue = 1): Promise<number> {
-    const record = await this.db.metadata.get(key);
-    const currentValue = (record?.value as number) || minValue;
-    const nextValue = currentValue + 1;
-    
-    await this.db.metadata.put({ key, value: nextValue });
-    return currentValue;
+    try {
+      let currentValue: number;
+      await this.db.transaction('rw', this.db.metadata, async () => {
+        const record = await this.db.metadata.get(key);
+        currentValue = (record?.value as number) || minValue;
+        const nextValue = currentValue + 1;
+        
+        await this.db.metadata.put({ key, value: nextValue });
+      });
+      return currentValue!;
+    } catch (error: unknown) {
+      console.error(`Error getting next ID for ${key}:`, error);
+      throw error;
+    }
+  }
+
+  // 辅助方法：获取表中当前最大ID
+  private async getMaxId(table: Table<any>): Promise<number> {
+    const lastRecord = await table.orderBy(':id').last();
+    return lastRecord?.id || 0;
+  }
+
+  // 辅助方法：确保ID不重复
+  private async ensureUniqueId(table: Table<any>, id: number): Promise<number> {
+    const exists = await table.get(id);
+    if (exists) {
+      // 如果ID已存在，获取当前最大ID并加1
+      const maxId = await this.getMaxId(table);
+      return maxId + 1;
+    }
+    return id;
   }
 
   // 辅助方法：检查ID是否在保留范围内
@@ -162,12 +198,14 @@ export class IndexedDBRepository implements IDataRepository {
     return await this.db.courses.get(id) || null;
   }
   async createCourse(courseData: Omit<Course, "id">): Promise<Course> {
-    const id = await this.getNextCourseId();
+    let id = await this.getNextCourseId();
     
     // 验证生成的ID是否符合用户课程ID规范
     if (!this.validateUserCourseId(id)) {
       throw new Error(`Generated course ID ${id} is in reserved range. User courses must have ID >= ${IndexedDBRepository.RESERVED_ID_RANGES.USER_COURSES.min}`);
     }
+
+    id = await this.ensureUniqueId(this.db.courses, id);
     
     const course: Course = {
       ...courseData,
@@ -176,8 +214,16 @@ export class IndexedDBRepository implements IDataRepository {
       updatedAt: new Date(),
     };
 
-    await this.db.courses.add(course);
-    return course;
+    try {
+      await this.db.courses.add(course);
+      return course;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ConstraintError') {
+        console.error(`Duplicate key error for course:`, error);
+        throw new Error(`Failed to create course: duplicate key error`);
+      }
+      throw error;
+    }
   }
 
   async updateCourse(
@@ -420,4 +466,435 @@ export class IndexedDBRepository implements IDataRepository {
     });
   }
 
+  // 节次相关操作
+  async getLessonById(courseId: number, lessonId: number): Promise<Lesson | null> {
+    const course = await this.getCourseById(courseId);
+    return course?.lessons.find(lesson => lesson.id === lessonId) || null;
+  }
+
+  async createLesson(lesson: Omit<Lesson, 'id'>): Promise<Lesson> {
+    const course = await this.getCourseById(lesson.courseId);
+    if (!course) {
+      throw new Error(`Course with id ${lesson.courseId} not found`);
+    }
+
+    let id = await this.getNextId('nextLessonId');
+    id = await this.ensureUniqueId(this.db.courses, id); // 虽然lesson存储在course中，但我们仍然需要确保ID唯一
+
+    const newLesson: Lesson = {
+      ...lesson,
+      id,
+      sentences: lesson.sentences || []
+    };
+
+    try {
+      course.lessons.push(newLesson);
+      await this.updateCourse(course.id, { lessons: course.lessons });
+      return newLesson;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ConstraintError') {
+        console.error(`Duplicate key error for lesson:`, error);
+        throw new Error(`Failed to create lesson: duplicate key error`);
+      }
+      throw error;
+    }
+  }
+
+  async updateLesson(id: number, lessonData: Partial<Lesson>): Promise<Lesson | null> {
+    const course = await this.getCourseById(lessonData.courseId!);
+    if (!course) return null;
+
+    const lessonIndex = course.lessons.findIndex(lesson => lesson.id === id);
+    if (lessonIndex === -1) return null;
+
+    const updatedLesson = {
+      ...course.lessons[lessonIndex],
+      ...lessonData,
+      id // 确保ID不被更改
+    };
+
+    course.lessons[lessonIndex] = updatedLesson;
+    await this.updateCourse(course.id, { lessons: course.lessons });
+    return updatedLesson;
+  }
+
+  async deleteLesson(id: number): Promise<boolean> {
+    const courses = await this.getAllCourses();
+    for (const course of courses) {
+      const lessonIndex = course.lessons.findIndex(lesson => lesson.id === id);
+      if (lessonIndex !== -1) {
+        course.lessons.splice(lessonIndex, 1);
+        await this.updateCourse(course.id, { lessons: course.lessons });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 句子相关操作
+  async createSentence(sentence: Omit<SentencePair, 'id'>): Promise<SentencePair> {
+    const lesson = await this.getLessonById(sentence.lessonId!, sentence.lessonId!);
+    if (!lesson) {
+      throw new Error(`Lesson with id ${sentence.lessonId} not found`);
+    }
+
+    const newSentence: SentencePair = {
+      ...sentence,
+      id: await this.getNextId('nextSentenceId')
+    };
+
+    lesson.sentences.push(newSentence);
+    const course = await this.getCourseById(lesson.courseId);
+    if (course) {
+      await this.updateCourse(course.id, { lessons: course.lessons });
+    }
+    return newSentence;
+  }
+
+  async updateSentence(id: number, sentenceData: Partial<SentencePair>): Promise<SentencePair | null> {
+    const courses = await this.getAllCourses();
+    for (const course of courses) {
+      for (const lesson of course.lessons) {
+        const sentenceIndex = lesson.sentences.findIndex(s => s.id === id);
+        if (sentenceIndex !== -1) {
+          const updatedSentence = {
+            ...lesson.sentences[sentenceIndex],
+            ...sentenceData,
+            id // 确保ID不被更改
+          };
+          lesson.sentences[sentenceIndex] = updatedSentence;
+          await this.updateCourse(course.id, { lessons: course.lessons });
+          return updatedSentence;
+        }
+      }
+    }
+    return null;
+  }
+
+  async deleteSentence(id: number): Promise<boolean> {
+    const courses = await this.getAllCourses();
+    for (const course of courses) {
+      for (const lesson of course.lessons) {
+        const sentenceIndex = lesson.sentences.findIndex(s => s.id === id);
+        if (sentenceIndex !== -1) {
+          lesson.sentences.splice(sentenceIndex, 1);
+          await this.updateCourse(course.id, { lessons: course.lessons });
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // 学习进度相关操作
+  async updateLearningProgress(progress: LearningProgress): Promise<void> {
+    await this.saveLearningProgress(progress);
+  }
+
+  async resetLearningProgress(courseId: number, lessonId: number): Promise<void> {
+    await this.deleteLearningProgress(courseId, lessonId);
+  }
+
+  // 词汇管理方法
+  private async initializeWordTables(): Promise<void> {
+    if (!this.db.words) {
+      this.db.version(2).stores({
+        words: 'id, word, status',
+        vocabularyBooks: 'id, name, type'
+      });
+      await this.db.open();
+    }
+  }
+
+  async createWordRecord(
+    word: string,
+    translation?: string,
+    isError: boolean = false,
+    additionalInfo?: {
+      phonetic?: string;
+      audioUrl?: string;
+      meanings?: WordMeaning[];
+    }
+  ): Promise<WordRecord> {
+    await this.initializeWordTables();
+    
+    // 首先检查单词是否已存在
+    const existingWord = await this.getWordRecord(word);
+    if (existingWord) {
+      throw new Error(`Word "${word}" already exists in the database`);
+    }
+
+    let id = await this.getNextId('nextWordId');
+    id = await this.ensureUniqueId(this.db.words, id);
+
+    const newWord: WordRecord = {
+      id,
+      word,
+      translation,
+      status: isError ? VocabularyStatus.ERROR : VocabularyStatus.NEW,
+      errorCount: isError ? 1 : 0,
+      dateAdded: Date.now(),
+      // 添加额外的字段
+      phonetic: additionalInfo?.phonetic,
+      audioUrl: additionalInfo?.audioUrl,
+      meanings: additionalInfo?.meanings
+    };
+
+    try {
+      await this.db.words.add(newWord);
+
+      // 根据单词状态添加到对应的词汇本
+      const bookType = isError ? 'ERROR' : 'NEW';
+      const books = await this.db.vocabularyBooks.where('type').equals(bookType).toArray();
+      
+      if (books.length > 0) {
+        // 如果存在对应类型的词汇本，添加到第一个词汇本中
+        const book = books[0];
+        book.words = [...book.words, newWord];
+        book.updatedAt = new Date();
+        await this.db.vocabularyBooks.put(book);
+      } else {
+        // 如果不存在对应类型的词汇本，创建一个新的
+        const bookName = isError ? '错词本' : '生词本';
+        await this.createVocabularyBook(bookName, bookType, [newWord]);
+      }
+
+      return newWord;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ConstraintError') {
+        console.error(`Duplicate key error for word "${word}":`, error);
+        throw new Error(`Failed to create word record: duplicate key error`);
+      }
+      throw error;
+    }
+  }
+
+  async getWordRecord(word: string): Promise<WordRecord | null> {
+    await this.initializeWordTables();
+    return await this.db.words.where('word').equals(word).first() || null;
+  }
+
+  async updateWordRecord(wordRecord: WordRecord): Promise<WordRecord> {
+    await this.initializeWordTables();
+    
+    // 确保保留所有字段
+    const existingWord = await this.getWordRecord(wordRecord.word);
+    if (!existingWord) {
+      throw new Error(`Word "${wordRecord.word}" not found`);
+    }
+
+    const updatedWord: WordRecord = {
+      ...existingWord,
+      ...wordRecord,
+      id: existingWord.id, // 确保ID不变
+      dateAdded: existingWord.dateAdded, // 确保添加日期不变
+      // 确保可选字段被正确处理
+      phonetic: wordRecord.phonetic ?? existingWord.phonetic,
+      audioUrl: wordRecord.audioUrl ?? existingWord.audioUrl,
+      meanings: wordRecord.meanings ?? existingWord.meanings
+    };
+
+    await this.db.words.put(updatedWord);
+
+    // 更新词汇本中的单词信息
+    const books = await this.getAllVocabularyBooks();
+    for (const book of books) {
+      const wordIndex = book.words.findIndex(w => w.id === updatedWord.id);
+      if (wordIndex !== -1) {
+        book.words[wordIndex] = updatedWord;
+        book.updatedAt = new Date();
+        await this.db.vocabularyBooks.put(book);
+      }
+    }
+
+    return updatedWord;
+  }
+
+  async incrementWordError(word: string): Promise<WordRecord | null> {
+    const wordRecord = await this.getWordRecord(word);
+    if (!wordRecord) {
+      // 如果单词不存在，创建一个新的错误单词记录
+      try {
+        return await this.createWordRecord(word, undefined, true);
+      } catch (error) {
+        console.error(`Failed to create error word record for "${word}":`, error);
+        return null;
+      }
+    }
+
+    const updatedWord: WordRecord = {
+      ...wordRecord,
+      errorCount: (wordRecord.errorCount || 0) + 1,
+      status: VocabularyStatus.ERROR,
+      // 保留所有原有字段
+      phonetic: wordRecord.phonetic,
+      audioUrl: wordRecord.audioUrl,
+      meanings: wordRecord.meanings,
+      dateAdded: wordRecord.dateAdded
+    };
+
+    try {
+      await this.updateWordRecord(updatedWord);
+
+      // 从生词本移动到错词本
+      if (wordRecord.status !== VocabularyStatus.ERROR) {
+        // 从原词汇本中移除
+        const oldBooks = await this.getAllVocabularyBooks();
+        for (const book of oldBooks) {
+          if (book.words.some(w => w.id === wordRecord.id)) {
+            book.words = book.words.filter(w => w.id !== wordRecord.id);
+            book.updatedAt = new Date();
+            await this.db.vocabularyBooks.put(book);
+          }
+        }
+
+        // 添加到错词本
+        const errorBooks = await this.db.vocabularyBooks.where('type').equals('ERROR').toArray();
+        if (errorBooks.length > 0) {
+          const errorBook = errorBooks[0];
+          errorBook.words = [...errorBook.words, updatedWord];
+          errorBook.updatedAt = new Date();
+          await this.db.vocabularyBooks.put(errorBook);
+        } else {
+          await this.createVocabularyBook('错词本', 'ERROR', [updatedWord]);
+        }
+      }
+
+      return updatedWord;
+    } catch (error) {
+      console.error(`Failed to increment error count for word "${word}":`, error);
+      return null;
+    }
+  }
+
+  async markWordAsMastered(word: string): Promise<WordRecord | null> {
+    const wordRecord = await this.getWordRecord(word);
+    if (!wordRecord) return null;
+
+    const updatedWord: WordRecord = {
+      ...wordRecord,
+      status: VocabularyStatus.MASTERED,
+      dateAdded: wordRecord.dateAdded
+    };
+
+    await this.updateWordRecord(updatedWord);
+    return updatedWord;
+  }
+
+  async createVocabularyBook(
+    name: string, 
+    type: 'NEW' | 'ERROR' | 'MASTERED',
+    initialWords: WordRecord[] = []
+  ): Promise<VocabularyBook> {
+    await this.initializeWordTables();
+    
+    // 检查是否已存在同名词汇本
+    const existingBooks = await this.db.vocabularyBooks.where('name').equals(name).toArray();
+    if (existingBooks.length > 0) {
+      throw new Error(`Vocabulary book "${name}" already exists`);
+    }
+
+    let id = await this.getNextId('nextVocabularyBookId');
+    id = await this.ensureUniqueId(this.db.vocabularyBooks, id);
+
+    const now = new Date();
+    const newBook: VocabularyBook = {
+      id,
+      name,
+      type,
+      words: initialWords,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    try {
+      await this.db.vocabularyBooks.add(newBook);
+      return newBook;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ConstraintError') {
+        console.error(`Duplicate key error for vocabulary book "${name}":`, error);
+        throw new Error(`Failed to create vocabulary book: duplicate key error`);
+      }
+      throw error;
+    }
+  }
+
+  async getVocabularyBook(id: number): Promise<VocabularyBook | null> {
+    await this.initializeWordTables();
+    return await this.db.vocabularyBooks.get(id) || null;
+  }
+
+  async getAllVocabularyBooks(): Promise<VocabularyBook[]> {
+    await this.initializeWordTables();
+    return await this.db.vocabularyBooks.toArray();
+  }
+
+  async getWordsByStatus(status: string): Promise<WordRecord[]> {
+    await this.initializeWordTables();
+    return await this.db.words.where('status').equals(status).toArray();
+  }
+
+  async getErrorWords(): Promise<WordRecord[]> {
+    return this.getWordsByStatus('ERROR');
+  }
+
+  async getMasteredWords(): Promise<WordRecord[]> {
+    return this.getWordsByStatus('MASTERED');
+  }
+
+  async getWordByValue(word: string): Promise<WordRecord | null> {
+    return this.getWordRecord(word);
+  }
+
+  async addWord(word: Omit<WordRecord, 'id'>): Promise<void> {
+    await this.createWordRecord(
+      word.word,
+      word.translation,
+      word.status === VocabularyStatus.ERROR,
+      {
+        phonetic: word.phonetic,
+        audioUrl: word.audioUrl,
+        meanings: word.meanings
+      }
+    );
+  }
+
+  async updateWord(word: WordRecord): Promise<void> {
+    await this.updateWordRecord(word);
+  }
+
+  async deleteWord(id: number): Promise<void> {
+    await this.initializeWordTables();
+    await this.db.words.delete(id);
+  }
+
+  // 进度相关
+  async getLessonProgress(courseId: number, lessonId: number): Promise<{ completedSentences: number[] }> {
+    const progress = await this.getLearningProgress(courseId, lessonId);
+    return {
+      completedSentences: progress?.completedSentences || []
+    };
+  }
+
+  async updateLessonProgress(courseId: number, lessonId: number, completedSentences: number[]): Promise<void> {
+    const lesson = await this.getLessonById(courseId, lessonId);
+    if (!lesson) {
+      throw new Error(`Lesson not found: courseId=${courseId}, lessonId=${lessonId}`);
+    }
+
+    const progress: LearningProgress = {
+      courseId,
+      lessonId,
+      completedSentences,
+      totalSentences: lesson.sentences.length,
+      accuracy: 0,
+      attempts: 0
+    };
+
+    await this.saveLearningProgress(progress);
+  }
+
+  async resetLessonProgress(courseId: number, lessonId: number): Promise<void> {
+    await this.resetLearningProgress(courseId, lessonId);
+  }
 }
