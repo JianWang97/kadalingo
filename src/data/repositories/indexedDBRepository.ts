@@ -36,6 +36,38 @@ class LanguageLearningDB extends Dexie {
       words: '++id, word, status',
       vocabularyBooks: '++id, name, type'
     });
+
+    // 添加版本3，处理法语数据迁移
+    this.version(3).stores({}).upgrade(async tx => {
+      // 已知的需要修复的数据位置
+      const targetData = [
+        {
+          courseId: 1,  // beginnerEnglishDialogueCourse 的 ID
+          lessonId: 4,  // "第4节：饮食喜好" 的 ID
+          sentenceId: 40,  // "Bon appétit!" 句子的 ID
+          newEnglish: "Enjoy your meal!",
+          newPhonetic: "ɪnˈdʒɔɪ jɔː miːl"
+        }
+      ];
+
+      for (const target of targetData) {
+        const course = await tx.table('courses').get(target.courseId);
+        if (!course) continue;
+
+        const lesson = course.lessons?.find((l: Lesson) => l.id === target.lessonId);
+        if (!lesson) continue;
+
+        const sentence = lesson.sentences?.find((s: SentencePair) => s.id === target.sentenceId);
+        if (!sentence) continue;
+
+        // 更新句子内容
+        sentence.english = target.newEnglish;
+        sentence.phonetic = target.newPhonetic;
+
+        // 保存更改
+        await tx.table('courses').put(course);
+      }
+    });
   }
 }
 

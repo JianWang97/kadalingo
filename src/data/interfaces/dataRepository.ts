@@ -9,9 +9,6 @@ import {
   VocabularyStatus
 } from "../types";
 
-export interface QueryParams {
-  [key: string]: any;
-}
 
 // 数据仓库接口，定义所有数据访问方法
 export interface IDataRepository {

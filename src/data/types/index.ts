@@ -1,4 +1,4 @@
-// 基础数据类型定义
+
 
 // 中英文句子对
 export interface SentencePair {
