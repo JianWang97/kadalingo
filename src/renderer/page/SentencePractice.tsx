@@ -459,11 +459,14 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
     const userWord = normalizeWord(wordInputs[idx] || "");
     const correctWord = normalizeWord(parsedTokens[idx]?.word || "");
+    const originalWord = parsedTokens[idx]?.word || ""; // 获取原始单词，未经过normalize
 
     const isWordCorrect = userWord === correctWord;
     
-    // 更新词汇学习状态
-    vocabularyService.processWordInput(correctWord, isWordCorrect);
+    // 只有当单词不包含单引号时，才更新词汇学习状态
+    if (!originalWord.includes("'")) {
+      vocabularyService.processWordInput(correctWord, isWordCorrect);
+    }
 
     setWordResults((prev) => {
       const newResults = [...prev];
@@ -586,15 +589,22 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     wordIndex: number,
     tokens: { word: string; punctuation: string }[]
   ) => {
+    const originalWord = tokens[wordIndex]?.word || "";
+
     // 显示提示
     const newShowHints = [...showHints];
     newShowHints[wordIndex] = true;
     setShowHints(newShowHints);
 
+    // 只有当单词不包含单引号时，才添加到生词本
+    if (!originalWord.includes("'")) {
+      vocabularyService.addToNewWords(originalWord);
+    }
+    
     // 播放声音和读音
     playKeySound("enter");
     if (!isPlaying) {
-      speakEnglish(tokens[wordIndex]?.word || "");
+      speakEnglish(originalWord);
     }
 
     // 聚焦到该输入框
