@@ -33,8 +33,8 @@ class LanguageLearningDB extends Dexie {
     });
 
     this.version(2).stores({
-      words: 'id, word, status',
-      vocabularyBooks: 'id, name, type'
+      words: '++id, word, status',
+      vocabularyBooks: '++id, name, type'
     });
   }
 }
@@ -599,8 +599,8 @@ export class IndexedDBRepository implements IDataRepository {
   private async initializeWordTables(): Promise<void> {
     if (!this.db.words) {
       this.db.version(2).stores({
-        words: 'id, word, status',
-        vocabularyBooks: 'id, name, type'
+        words: '++id, word, status',
+        vocabularyBooks: '++id, name, type'
       });
       await this.db.open();
     }
@@ -624,11 +624,7 @@ export class IndexedDBRepository implements IDataRepository {
       throw new Error(`Word "${word}" already exists in the database`);
     }
 
-    let id = await this.getNextId('nextWordId');
-    id = await this.ensureUniqueId(this.db.words, id);
-
     const newWord: WordRecord = {
-      id,
       word,
       translation,
       status: isError ? VocabularyStatus.ERROR : VocabularyStatus.NEW,
@@ -641,7 +637,8 @@ export class IndexedDBRepository implements IDataRepository {
     };
 
     try {
-      await this.db.words.add(newWord);
+      const id = await this.db.words.add(newWord);
+      newWord.id = id;
 
       // 根据单词状态添加到对应的词汇本
       const bookType = isError ? 'ERROR' : 'NEW';
@@ -794,12 +791,8 @@ export class IndexedDBRepository implements IDataRepository {
       throw new Error(`Vocabulary book "${name}" already exists`);
     }
 
-    let id = await this.getNextId('nextVocabularyBookId');
-    id = await this.ensureUniqueId(this.db.vocabularyBooks, id);
-
     const now = new Date();
     const newBook: VocabularyBook = {
-      id,
       name,
       type,
       words: initialWords,
@@ -808,7 +801,8 @@ export class IndexedDBRepository implements IDataRepository {
     };
 
     try {
-      await this.db.vocabularyBooks.add(newBook);
+      const id = await this.db.vocabularyBooks.add(newBook);
+      newBook.id = id;
       return newBook;
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'ConstraintError') {
