@@ -1,14 +1,22 @@
-// 速率限制配置
+// 速率限制配置 - 适应 Worker 实例重启的弹性设计
 const RATE_LIMIT = {
-  HOURLY: {
-    MAX_REQUESTS: 300,    // 每小时最大请求数
+  // 更保守的限制，考虑到实例重启会重置计数器
+  PER_INSTANCE: {
+    MAX_REQUESTS: 50,     // 每个实例最大请求数（降低单实例限制）
     WINDOW_SIZE: 3600,    // 时间窗口大小（秒）
   },
-  DAILY: {
-    MAX_REQUESTS: 500,    // 每天最大请求数
-    WINDOW_SIZE: 86400,   // 时间窗口大小（秒）
+  // 短期突发限制
+  BURST: {
+    MAX_REQUESTS: 10,     // 短时间内最大请求数
+    WINDOW_SIZE: 300,     // 5分钟窗口
   },
-  BLOCK_DURATION: 3600,   // 超出限制后的封禁时间（秒）
+  BLOCK_DURATION: 1800,   // 超出限制后的封禁时间（30分钟，减少封禁时间）
+};
+
+// 内容限制配置
+const CONTENT_LIMIT = {
+  MAX_WORDS: 3,           // 最大单词数限制
+  MAX_CHARS: 100,         // 最大字符数限制（防止超长单词）
 };
 
 // 缓存配置
@@ -16,9 +24,58 @@ const CACHE_CONFIG = {
   TTL: 31536000,  // 缓存有效期为一年（秒）
 };
 
+// 内存中的速率限制计数器（Worker 实例级别）
+const rateLimitCache = new Map();
+
 // 用于生成随机字符串作为 salt
 function generateSalt() {
   return Math.random().toString(36).substring(2);
+}
+
+// 验证翻译内容是否符合要求
+function validateTranslationContent(text) {
+  // 检查字符长度
+  if (text.length > CONTENT_LIMIT.MAX_CHARS) {
+    throw new Error(`Text too long. Maximum ${CONTENT_LIMIT.MAX_CHARS} characters allowed.`);
+  }
+
+  // 清理文本：去除多余空格和标点符号
+  const cleanText = text.trim()
+    .replace(/[^\w\s\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/g, ' ') // 保留字母、数字、中文、日文
+    .replace(/\s+/g, ' ') // 合并多个空格
+    .trim();
+
+  if (!cleanText) {
+    throw new Error('Text cannot be empty.');
+  }
+
+  // 计算单词数（支持中英文混合）
+  let wordCount = 0;
+  
+  // 分割为英文单词和中文字符
+  const segments = cleanText.split(/\s+/);
+  
+  for (const segment of segments) {
+    if (!segment) continue;
+    
+    // 如果包含中文字符，每个中文字符算作一个单词
+    const chineseChars = segment.match(/[\u4e00-\u9fff]/g);
+    if (chineseChars) {
+      wordCount += chineseChars.length;
+    }
+    
+    // 如果包含英文字符，整个段落算作一个单词
+    const englishPart = segment.replace(/[\u4e00-\u9fff]/g, '').trim();
+    if (englishPart) {
+      wordCount += 1;
+    }
+  }
+
+  if (wordCount > CONTENT_LIMIT.MAX_WORDS) {
+    throw new Error(`Too many words. Maximum ${CONTENT_LIMIT.MAX_WORDS} words allowed, found ${wordCount} words.`);
+  }
+
+  return cleanText;
 }
 
 // 生成签名
@@ -30,43 +87,57 @@ async function generateSign(text, salt, appid, key) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// 检查速率限制
+// 检查速率限制 - 适应 Worker 实例特性的弹性设计
 async function checkRateLimit(env, ip) {
   const now = Math.floor(Date.now() / 1000);
-  const hourlyWindowKey = `${ip}:hourly:${Math.floor(now / RATE_LIMIT.HOURLY.WINDOW_SIZE)}`;
-  const dailyWindowKey = `${ip}:daily:${Math.floor(now / RATE_LIMIT.DAILY.WINDOW_SIZE)}`;
+  const instanceWindowKey = `${ip}:instance:${Math.floor(now / RATE_LIMIT.PER_INSTANCE.WINDOW_SIZE)}`;
+  const burstWindowKey = `${ip}:burst:${Math.floor(now / RATE_LIMIT.BURST.WINDOW_SIZE)}`;
   
   // 检查是否被封禁
   const blockKey = `${ip}:blocked`;
-  const isBlocked = await env.RATE_LIMITS.get(blockKey);
-  if (isBlocked) {
-    throw new Error('Translation limit exceeded. Please try again in 1 hour.');
+  const blockData = rateLimitCache.get(blockKey);
+  if (blockData && blockData.expiry > now) {
+    throw new Error('Translation limit exceeded. Please try again in 30 minutes.');
   }
 
-  // 获取当前小时的请求数
-  let hourlyCount = parseInt(await env.RATE_LIMITS.get(hourlyWindowKey) || '0');
-  hourlyCount++;
+  // 获取当前实例窗口的请求数
+  const instanceData = rateLimitCache.get(instanceWindowKey) || { count: 0, expiry: now + RATE_LIMIT.PER_INSTANCE.WINDOW_SIZE };
+  let instanceCount = instanceData.count + 1;
 
-  // 获取当前天的请求数
-  let dailyCount = parseInt(await env.RATE_LIMITS.get(dailyWindowKey) || '0');
-  dailyCount++;
+  // 获取突发窗口的请求数
+  const burstData = rateLimitCache.get(burstWindowKey) || { count: 0, expiry: now + RATE_LIMIT.BURST.WINDOW_SIZE };
+  let burstCount = burstData.count + 1;
 
-  // 如果超出小时限制，设置封禁
-  if (hourlyCount > RATE_LIMIT.HOURLY.MAX_REQUESTS) {
-    await env.RATE_LIMITS.put(blockKey, 'true', { expirationTtl: RATE_LIMIT.BLOCK_DURATION });
-    throw new Error('Hourly translation limit (300 words) exceeded. Please try again in 1 hour.');
+  // 检查突发限制（防止短时间内大量请求）
+  if (burstCount > RATE_LIMIT.BURST.MAX_REQUESTS) {
+    rateLimitCache.set(blockKey, { expiry: now + RATE_LIMIT.BLOCK_DURATION });
+    throw new Error('Too many requests in short time. Please try again in 30 minutes.');
   }
 
-  // 如果超出每日限制，设置封禁
-  if (dailyCount > RATE_LIMIT.DAILY.MAX_REQUESTS) {
-    await env.RATE_LIMITS.put(blockKey, 'true', { expirationTtl: RATE_LIMIT.BLOCK_DURATION });
-    throw new Error('Daily translation limit (500 words) exceeded. Please try again tomorrow.');
+  // 检查实例限制
+  if (instanceCount > RATE_LIMIT.PER_INSTANCE.MAX_REQUESTS) {
+    rateLimitCache.set(blockKey, { expiry: now + RATE_LIMIT.BLOCK_DURATION });
+    throw new Error('Translation limit exceeded. Please try again in 30 minutes.');
   }
 
   // 更新请求计数
-  await env.RATE_LIMITS.put(hourlyWindowKey, hourlyCount.toString(), { expirationTtl: RATE_LIMIT.HOURLY.WINDOW_SIZE });
-  await env.RATE_LIMITS.put(dailyWindowKey, dailyCount.toString(), { expirationTtl: RATE_LIMIT.DAILY.WINDOW_SIZE });
+  rateLimitCache.set(instanceWindowKey, { count: instanceCount, expiry: now + RATE_LIMIT.PER_INSTANCE.WINDOW_SIZE });
+  rateLimitCache.set(burstWindowKey, { count: burstCount, expiry: now + RATE_LIMIT.BURST.WINDOW_SIZE });
+  
+  // 定期清理过期数据
+  cleanupExpiredEntries();
+  
   return true;
+}
+
+// 清理过期的内存缓存条目
+function cleanupExpiredEntries() {
+  const now = Math.floor(Date.now() / 1000);
+  for (const [key, data] of rateLimitCache) {
+    if (data.expiry && data.expiry < now) {
+      rateLimitCache.delete(key);
+    }
+  }
 }
 
 // 生成缓存键
@@ -128,8 +199,25 @@ export default {
         );
       }
 
+      // 验证翻译内容
+      let validatedText;
+      try {
+        validatedText = validateTranslationContent(text);
+      } catch (validationError) {
+        return new Response(
+          JSON.stringify({ error: validationError.message }), 
+          { 
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            }
+          }
+        );
+      }
+
       // 检查缓存
-      const cachedResult = await getFromCache(env, text, from, to);
+      const cachedResult = await getFromCache(env, validatedText, from, to);
       if (cachedResult) {
         return new Response(
           JSON.stringify({ translation: cachedResult, cached: true }),
@@ -149,11 +237,11 @@ export default {
 
       // 生成 salt 和签名
       const salt = generateSalt();
-      const sign = await generateSign(text, salt, appid, key);
+      const sign = await generateSign(validatedText, salt, appid, key);
 
       // 构建百度翻译 API 请求
       const url = new URL('https://fanyi-api.baidu.com/api/trans/vip/translate');
-      url.searchParams.append('q', text);
+      url.searchParams.append('q', validatedText);
       url.searchParams.append('from', from);
       url.searchParams.append('to', to);
       url.searchParams.append('appid', appid);
@@ -172,7 +260,7 @@ export default {
 
       // 存入缓存
       if (translation) {
-        await setToCache(env, text, from, to, translation);
+        await setToCache(env, validatedText, from, to, translation);
       }
 
       // 返回翻译结果

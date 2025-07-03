@@ -2,9 +2,9 @@ name = "translate"
 main = "translate.js"
 compatibility_date = "2024-01-01"
 
- kv_namespaces = [
-   {binding = "TRANSLATE_CACHE", id = "9cc14d4d2a4a4dd8ad4734a085a0630d"},
-   {binding = "RATE_LIMITS", id = "84b5c19f3b774f89a51e127065038ced"}
+# 只保留翻译缓存的 KV 绑定，移除速率限制的 KV 绑定以节省配额
+kv_namespaces = [
+  {binding = "TRANSLATE_CACHE", id = "9cc14d4d2a4a4dd8ad4734a085a0630d"}
 ]
 
 
