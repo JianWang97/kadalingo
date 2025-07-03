@@ -1,86 +1,204 @@
-name: Test Version Check
+name: Release
 
 on:
   workflow_dispatch:  # 允许手动触发
-  pull_request:
-    paths:
-      - 'package.json'
-      - '.github/workflows/test-version-check.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - 'package.json'
-      - '.github/workflows/test-version-check.yml'
+    inputs:
+      version:
+        description: '版本号 (例如: v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+        type: string
 
 jobs:
-  test-version-check:
-    runs-on: ubuntu-latest  # 使用 Ubuntu 环境，更快更便宜
+  release:
+    runs-on: windows-latest  # 使用 Windows 环境构建 exe 文件
+    environment: cloudfare
     permissions:
-      contents: read
-      actions: read
+      contents: write  # 需要写权限来创建 release
+      actions: read    # 读取actions权限
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # 获取完整的 git 历史记录
       
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Check package.json version
         id: check_version
-        shell: bash
+        shell: pwsh
         run: |
           # 读取 package.json 中的版本号
-          currentVersion=$(node -p "require('./package.json').version")
-          tagName="v$currentVersion"
+          $packageJson = Get-Content -Path "package.json" -Raw | ConvertFrom-Json
+          $currentVersion = $packageJson.version
+          $tagName = "v$currentVersion"
           
           echo "Current package.json version: $currentVersion"
           echo "Tag name: $tagName"
           
           # 检查该版本的 tag 是否已经存在
-          tagExists=false
-          if git rev-parse --verify "refs/tags/$tagName" >/dev/null 2>&1; then
-            tagExists=true
-          fi
+          $tagExists = $false
+          try {
+            $gitResult = git rev-parse --verify "refs/tags/$tagName" 2>$null
+            if ($LASTEXITCODE -eq 0 -and $gitResult) {
+              $tagExists = $true
+              echo "Tag $tagName exists"
+            } else {
+              echo "Tag $tagName does not exist"
+            }
+          } catch {
+            echo "Error checking tag, assuming it does not exist"
+            $tagExists = $false
+          }
           
           # 如果是手动触发，则允许继续
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             echo "Manual trigger - proceeding with release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          elif [ "$tagExists" = "true" ]; then
+            echo "should_release=true" >> $env:GITHUB_OUTPUT
+          } elseif ($tagExists) {
             echo "Tag $tagName already exists - skipping release"
-            echo "should_release=false" >> $GITHUB_OUTPUT
-          else
+            echo "should_release=false" >> $env:GITHUB_OUTPUT
+          } else {
             echo "New version detected - proceeding with release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          fi
+            echo "should_release=true" >> $env:GITHUB_OUTPUT
+          }
           
-          echo "current_version=$currentVersion" >> $GITHUB_OUTPUT
-          echo "tag_name=$tagName" >> $GITHUB_OUTPUT
-          echo "tag_exists=$tagExists" >> $GITHUB_OUTPUT
+          echo "current_version=$currentVersion" >> $env:GITHUB_OUTPUT
+          echo "tag_name=$tagName" >> $env:GITHUB_OUTPUT
+          echo "tag_exists=$($tagExists.ToString().ToLower())" >> $env:GITHUB_OUTPUT
       
-      - name: Display test results
-        run: |
-          echo "🧪 测试结果:"
-          echo "📦 当前版本: ${{ steps.check_version.outputs.current_version }}"
-          echo "🏷️ 标签名称: ${{ steps.check_version.outputs.tag_name }}"
-          echo "❓ 标签是否存在: ${{ steps.check_version.outputs.tag_exists }}"
-          echo "✅ 是否应该发布: ${{ steps.check_version.outputs.should_release }}"
-          
-          if [ "${{ steps.check_version.outputs.should_release }}" = "true" ]; then
-            echo "🚀 版本检查通过，可以进行发布"
-          else
-            echo "⏭️ 版本已存在，跳过发布"
-          fi
+      - name: Install dependencies
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npm ci
+        
+      - name: Build application
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: List existing tags (for debugging)
+      - name: List build output (debug)
+        if: steps.check_version.outputs.should_release == 'true'
+        run: dir build
+        
+      - name: Extract version from tag or input
+        if: steps.check_version.outputs.should_release == 'true'
+        id: get_version
+        shell: pwsh
         run: |
-          echo "📋 现有的版本标签:"
-          git tag -l "v*" | sort -V | tail -10
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ github.event.inputs.version }}" -replace '^v', ''
+            $tag_name = "${{ github.event.inputs.version }}"
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "tag_name=$tag_name" >> $env:GITHUB_OUTPUT
+            echo "Manual trigger with version: $tag_name"
+          } else {
+            # 使用从 package.json 读取的版本
+            $version = "${{ steps.check_version.outputs.current_version }}"
+            $tag_name = "${{ steps.check_version.outputs.tag_name }}"
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+            echo "tag_name=$tag_name" >> $env:GITHUB_OUTPUT
+            echo "Package.json version: $tag_name"
+          }
+      - name: Create tag for manual trigger
+        if: github.event_name == 'workflow_dispatch' && steps.check_version.outputs.should_release == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag ${{ steps.get_version.outputs.tag_name }}
+          git push origin ${{ steps.get_version.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Show git status
+      - name: Create tag for package version update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check_version.outputs.should_release == 'true'
         run: |
-          echo "📊 Git 状态信息:"
-          echo "当前分支: $(git branch --show-current)"
-          echo "最近提交: $(git log --oneline -1)"
-          echo "触发事件: ${{ github.event_name }}"
-          echo "引用: ${{ github.ref }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag ${{ steps.check_version.outputs.tag_name }}
+          git push origin ${{ steps.check_version.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create Release
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag_name }}
+          name: 咔哒 ${{ steps.get_version.outputs.tag_name }} - 语言学习句子练习工具
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          body: |
+            🚀 **咔哒语言学习工具** ${{ steps.get_version.outputs.tag_name }} 版本发布
+            
+            ## 📥 下载说明
+            - **`kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe`**: 完整安装包，推荐大多数用户使用
+            - **`kadalingo ${{ steps.get_version.outputs.version }}.exe`**: 便携版，无需安装直接运行
+            
+            ## ✨ 主要功能
+            - 🎯 语言学习句子练习功能
+            - 🌍 支持多语言界面
+            - 🎨 现代化的用户界面设计
+            - 📱 响应式设计，适配不同屏幕尺寸
+            - 📝 AI 生成课程内容，助力高效学习
+            
+            ## 🔧 安装说明
+            1. 下载对应的安装包
+            2. 运行安装程序并按照提示安装
+            3. 启动应用开始语言学习之旅
+
+            如有问题，请访问 [项目主页](https://github.com/JianWang97/kadalingo) 或提交 [Issue](https://github.com/JianWang97/kadalingo/issues)。
+          files: build/*.exe
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload build artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        if: failure() && steps.check_version.outputs.should_release == 'true'  # 只在失败时上传，用于调试
+        with:
+          name: build-artifacts
+          path: build/
+          retention-days: 7
+
+      - name: Install AWS CLI
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          Invoke-WebRequest -Uri "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
+          Start-Process msiexec.exe -Wait -ArgumentList "/i AWSCLIV2.msi /quiet"
+          aws --version
+
+      - name: Configure AWS CLI for Cloudflare R2
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set region auto
+          aws configure set endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+      - name: Upload to Cloudflare R2
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          # 上传安装包
+          aws s3 cp "build/kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          # 上传便携版
+          aws s3 cp "build/kadalingo ${{ steps.get_version.outputs.version }}.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          # 生成并上传版本信息文件
+          $versionInfo = @{
+            latest_version = "${{ steps.get_version.outputs.version }}"
+            release_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          } | ConvertTo-Json
+          $versionInfo | Set-Content -Path version.json
+          aws s3 cp version.json "s3://${{ secrets.R2_BUCKET_NAME }}/latest-version.json"
+          
+      - name: Skip release notification
+        if: steps.check_version.outputs.should_release == 'false'
+        run: |
+          echo "🔄 版本检查: package.json 中的版本 v${{ steps.check_version.outputs.current_version }} 已经发布过，跳过本次发布"
+          echo "💡 如需强制发布，请使用手动触发或创建新的版本标签"
