@@ -4,7 +4,7 @@ import { dictionaryService } from './dictionaryService';
 
 class VocabularyService {
   private static instance: VocabularyService;
-
+  private static wordTranslateQueue: string[] = [];
   private constructor() {}
 
   public static getInstance(): VocabularyService {
@@ -26,35 +26,27 @@ class VocabularyService {
       if (existingWord) {
         return; // 单词已存在，不重复添加
       }
-
-      // 获取单词详细信息
-      const dictionaryEntries = await dictionaryService.lookupWord(word);
-      let meanings: WordMeaning[] = [];
-      let phonetic = '';
-      let audioUrl = '';
-      let translation: string | undefined = undefined;
-
-      if (dictionaryEntries && dictionaryEntries.length > 0) {
-        const entry = dictionaryEntries[0];
-        meanings = entry.meanings;
-        phonetic = dictionaryService.getPhonetic(entry);
-        audioUrl = dictionaryService.getAudioUrl(entry) || '';
-        translation = entry.chineseTranslation || undefined;
+      if (VocabularyService.wordTranslateQueue.includes(word)) {
+        return;
       }
-
+      VocabularyService.wordTranslateQueue.push(word);
+      // 获取单词中文翻译
+      const translation = await dictionaryService.getChineseTranslation(word);
+      VocabularyService.wordTranslateQueue.splice(VocabularyService.wordTranslateQueue.indexOf(word), 1);
       // 创建新的单词记录
       const newWord: Omit<WordRecord, 'id'> = {
         word,
-        translation,
+        translation: translation || undefined,
         status: VocabularyStatus.NEW,
         errorCount: 0,
         dateAdded: Date.now(),
-        phonetic,
-        audioUrl,
-        meanings
+        phonetic: '',
+        audioUrl: '',
+        meanings: []
       };
 
       await repo.addWord(newWord);
+
     } catch (error) {
       console.error('Failed to add word to vocabulary:', error);
       throw error;
@@ -68,43 +60,45 @@ class VocabularyService {
       const config = getStorageConfig();
       const repo = await factory.createRepository(config);
 
-      const existingWord = await repo.getWordByValue(word);
+      let existingWord = await repo.getWordByValue(word);
       
       if (existingWord) {
-        // 更新错误计数
         if (!isCorrect) {
           existingWord.errorCount += 1;
           existingWord.status = VocabularyStatus.ERROR;
+          await repo.updateWord(existingWord);
         }
-        await repo.updateWord(existingWord);
-      } else if (!isCorrect) {
-        // 如果单词不存在且输入错误，添加到错词本
-        const dictionaryEntries = await dictionaryService.lookupWord(word);
-        let meanings: WordMeaning[] = [];
-        let phonetic = '';
-        let audioUrl = '';
-        let translation: string | undefined = undefined;
+        // If correct, we don't need to do anything
+        return;
+      }
 
-        if (dictionaryEntries && dictionaryEntries.length > 0) {
-          const entry = dictionaryEntries[0];
-          meanings = entry.meanings;
-          phonetic = dictionaryService.getPhonetic(entry);
-          audioUrl = dictionaryService.getAudioUrl(entry) || '';
-          translation = entry.chineseTranslation || undefined;
-        }
-
+      // Only add new words if they are incorrect
+      if (!isCorrect) {
+        const translation = await dictionaryService.getChineseTranslation(word);
         const newWord: Omit<WordRecord, 'id'> = {
           word,
-          translation,
+          translation: translation || undefined,
           status: VocabularyStatus.ERROR,
           errorCount: 1,
           dateAdded: Date.now(),
-          phonetic,
-          audioUrl,
-          meanings
+          phonetic: '',
+          audioUrl: '',
+          meanings: []
         };
 
-        await repo.addWord(newWord);
+        try {
+          await repo.addWord(newWord);
+        } catch (error) {
+          // If word was added by another process, just update it
+          existingWord = await repo.getWordByValue(word);
+          if (existingWord) {
+            existingWord.errorCount += 1;
+            existingWord.status = VocabularyStatus.ERROR;
+            await repo.updateWord(existingWord);
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to process word input:', error);

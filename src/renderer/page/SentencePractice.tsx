@@ -321,10 +321,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
 
       // Ctrl + R - 重置练习
-      if (e.ctrlKey && e.key === "r") {
-        e.preventDefault();
-        resetGame();
-      }
+      // if (e.ctrlKey && e.key === "r") {
+      //   e.preventDefault();
+      //   resetGame();
+      // }
     };
 
     document.addEventListener("keydown", handleGlobalKeyPress);

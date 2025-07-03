@@ -1,0 +1,12 @@
+name = "translate"
+main = "translate.js"
+compatibility_date = "2024-01-01"
+
+# KV 命名空间绑定
+kv_namespaces = [
+  {binding = "TRANSLATE_CACHE", id = "YOUR_TRANSLATE_CACHE_ID"},
+  {binding = "RATE_LIMITS", id = "YOUR_RATE_LIMITS_ID"}
+]
+
+
+
