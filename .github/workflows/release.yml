@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main  # 当推送到主分支时检查版本
   workflow_dispatch:  # 允许手动触发
     inputs:
       version:
@@ -15,10 +12,10 @@ on:
 jobs:
   release:
     runs-on: windows-latest  # 使用 Windows 环境构建 exe 文件
+    environment: cloudfare
     permissions:
       contents: write  # 需要写权限来创建 release
       actions: read    # 读取actions权限
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
