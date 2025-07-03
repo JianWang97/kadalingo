@@ -62,103 +62,139 @@ jobs:
           echo ""
           
           # 测试连接并列出所有存储桶
-          echo "=== 列出所有可用存储桶 ==="
+          echo "=== 测试基本连接 ==="
+          echo "⚠️ 注意: 如果您的 R2 API 令牌没有 'Admin Read & Write' 权限，ListBuckets 操作可能会失败"
+          echo "这是正常的，我们将直接测试目标存储桶..."
+          echo ""
+          
           try {
             $allBuckets = aws s3 ls --endpoint-url $R2_ENDPOINT 2>&1
             if ($LASTEXITCODE -eq 0) {
-              echo "✅ 成功连接到 Cloudflare R2"
+              echo "✅ 成功连接到 Cloudflare R2 并列出存储桶"
               echo "可用存储桶:"
               echo $allBuckets
             } else {
-              echo "❌ 连接失败"
+              echo "⚠️ ListBuckets 操作失败（可能是权限限制）"
               echo $allBuckets
-              exit 1
+              echo "继续测试特定存储桶访问..."
             }
           } catch {
-            echo "❌ 列出存储桶时发生错误: $_"
-            exit 1
+            echo "⚠️ 列出存储桶时发生错误: $_"
+            echo "这可能是由于 API 令牌权限限制，继续测试特定存储桶..."
           }
           echo ""
           
           # 测试目标存储桶
           echo "=== 测试目标存储桶 '$BUCKET_NAME' ==="
+          $bucketExists = $false
           try {
             $bucketContent = aws s3 ls "s3://$BUCKET_NAME" --endpoint-url $R2_ENDPOINT 2>&1
             if ($LASTEXITCODE -eq 0) {
               echo "✅ 存储桶 '$BUCKET_NAME' 存在且可访问"
               echo "存储桶内容:"
               echo $bucketContent
+              $bucketExists = $true
             } else {
-              echo "❌ 存储桶 '$BUCKET_NAME' 不存在或无法访问"
+              echo "⚠️ 存储桶 '$BUCKET_NAME' 不存在或无法访问"
               echo $bucketContent
               
-              # 尝试创建存储桶
-              echo "尝试创建存储桶..."
-              $createResult = aws s3 mb "s3://$BUCKET_NAME" --endpoint-url $R2_ENDPOINT 2>&1
-              if ($LASTEXITCODE -eq 0) {
-                echo "✅ 存储桶 '$BUCKET_NAME' 创建成功"
-                echo $createResult
+              # 检查是否是权限问题还是存储桶不存在
+              if ($bucketContent -match "NoSuchBucket") {
+                echo "原因: 存储桶不存在"
+                echo "尝试创建存储桶..."
+                $createResult = aws s3 mb "s3://$BUCKET_NAME" --endpoint-url $R2_ENDPOINT 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                  echo "✅ 存储桶 '$BUCKET_NAME' 创建成功"
+                  echo $createResult
+                  $bucketExists = $true
+                } else {
+                  echo "❌ 创建存储桶失败"
+                  echo $createResult
+                  if ($createResult -match "BucketAlreadyExists") {
+                    echo "存储桶已存在，可能是权限问题"
+                    $bucketExists = $true
+                  } else {
+                    echo "❌ 无法创建存储桶，请检查权限配置"
+                    exit 1
+                  }
+                }
+              } elseif ($bucketContent -match "AccessDenied") {
+                echo "原因: 权限不足"
+                echo "请确保您的 R2 API 令牌具有以下权限:"
+                echo "- Object Read & Write"
+                echo "- 或者 Admin Read & Write"
+                echo "继续测试文件操作..."
+                $bucketExists = $true
               } else {
-                echo "❌ 创建存储桶失败"
-                echo $createResult
+                echo "❌ 未知错误，无法继续测试"
                 exit 1
               }
             }
           } catch {
             echo "❌ 测试存储桶时发生错误: $_"
-            exit 1
+            echo "尝试继续进行文件操作测试..."
+            $bucketExists = $true
           }
           echo ""
           
           # 测试上传功能
-          echo "=== 测试文件上传功能 ==="
-          $testFile = "test-upload-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
-          $testContent = "This is a test file created at $(Get-Date)"
-          
-          try {
-            # 创建测试文件
-            $testContent | Set-Content -Path $testFile
-            echo "创建测试文件: $testFile"
+          if ($bucketExists) {
+            echo "=== 测试文件上传功能 ==="
+            $testFile = "test-upload-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
+            $testContent = "This is a test file created at $(Get-Date)"
             
-            # 上传测试文件
-            $uploadResult = aws s3 cp $testFile "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
-            if ($LASTEXITCODE -eq 0) {
-              echo "✅ 文件上传成功"
-              echo $uploadResult
+            try {
+              # 创建测试文件
+              $testContent | Set-Content -Path $testFile
+              echo "创建测试文件: $testFile"
               
-              # 验证上传
-              $listResult = aws s3 ls "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
+              # 上传测试文件
+              $uploadResult = aws s3 cp $testFile "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
               if ($LASTEXITCODE -eq 0) {
-                echo "✅ 上传验证成功"
-                echo $listResult
+                echo "✅ 文件上传成功"
+                echo $uploadResult
                 
-                # 清理测试文件
-                $deleteResult = aws s3 rm "s3://$BUCKET_NAME/test/$testFile" --endpoint-url $R2_ENDPOINT 2>&1
+                # 验证上传
+                $listResult = aws s3 ls "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
                 if ($LASTEXITCODE -eq 0) {
-                  echo "✅ 测试文件清理完成"
+                  echo "✅ 上传验证成功"
+                  echo $listResult
+                  
+                  # 清理测试文件
+                  $deleteResult = aws s3 rm "s3://$BUCKET_NAME/test/$testFile" --endpoint-url $R2_ENDPOINT 2>&1
+                  if ($LASTEXITCODE -eq 0) {
+                    echo "✅ 测试文件清理完成"
+                  } else {
+                    echo "⚠️ 测试文件清理失败，但不影响主要功能"
+                    echo $deleteResult
+                  }
                 } else {
-                  echo "⚠️ 测试文件清理失败，但不影响主要功能"
-                  echo $deleteResult
+                  echo "❌ 上传验证失败"
+                  echo $listResult
                 }
               } else {
-                echo "❌ 上传验证失败"
-                echo $listResult
+                echo "❌ 文件上传失败"
+                echo $uploadResult
+                if ($uploadResult -match "AccessDenied") {
+                  echo "权限不足，请确保 API 令牌具有 Object Read & Write 权限"
+                }
+                exit 1
               }
-            } else {
-              echo "❌ 文件上传失败"
-              echo $uploadResult
+            } catch {
+              echo "❌ 测试上传时发生错误: $_"
               exit 1
+            } finally {
+              # 清理本地测试文件
+              if (Test-Path $testFile) {
+                Remove-Item $testFile -Force
+              }
             }
-          } catch {
-            echo "❌ 测试上传时发生错误: $_"
-            exit 1
-          } finally {
-            # 清理本地测试文件
-            if (Test-Path $testFile) {
-              Remove-Item $testFile -Force
-            }
+            echo ""
+          } else {
+            echo "=== 跳过文件上传测试 ==="
+            echo "由于存储桶访问问题，跳过文件上传测试"
+            echo ""
           }
-          echo ""
           
           echo "🎉 所有测试都通过了！Cloudflare R2 配置正确。"
         env:
@@ -170,14 +206,28 @@ jobs:
         run: |
           echo "=== 测试总结 ==="
           if ($LASTEXITCODE -eq 0) {
-            echo "✅ 所有 R2 连接测试都成功完成"
-            echo "您的 Cloudflare R2 配置是正确的，可以在主发布工作流中使用。"
+            echo "✅ R2 连接测试基本成功完成"
+            echo "您的 Cloudflare R2 配置可以在主发布工作流中使用。"
           } else {
-            echo "❌ R2 连接测试失败"
-            echo "请检查以下配置:"
-            echo "- R2_ACCESS_KEY_ID"
-            echo "- R2_SECRET_ACCESS_KEY" 
-            echo "- R2_ACCOUNT_ID"
-            echo "- R2_BUCKET_NAME"
-            echo "确保这些 secrets 在 GitHub 仓库设置中正确配置。"
+            echo "❌ R2 连接测试部分失败"
           }
+          
+          echo ""
+          echo "=== 重要提示 ==="
+          echo "如果遇到 'Access Denied' 错误，请检查以下配置:"
+          echo ""
+          echo "1. GitHub Secrets 配置:"
+          echo "   - R2_ACCESS_KEY_ID: Cloudflare R2 API 令牌 ID"
+          echo "   - R2_SECRET_ACCESS_KEY: Cloudflare R2 API 令牌密钥"
+          echo "   - R2_ACCOUNT_ID: Cloudflare 账户 ID"
+          echo "   - R2_BUCKET_NAME: 目标存储桶名称"
+          echo ""
+          echo "2. R2 API 令牌权限:"
+          echo "   推荐权限: 'Admin Read & Write' (可以执行所有操作)"
+          echo "   最小权限: 'Object Read & Write' (仅对象操作，无法列出存储桶)"
+          echo ""
+          echo "3. 存储桶权限:"
+          echo "   确保 API 令牌对目标存储桶有读写权限"
+          echo ""
+          echo "注意: 即使 ListBuckets 失败，只要文件上传测试成功，"
+          echo "就表明配置对于发布工作流来说是足够的。"
