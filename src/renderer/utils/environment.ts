@@ -60,5 +60,5 @@ export const getAppVersion = () => {
 // 获取桌面版下载链接
 export const getDesktopDownloadUrl = () => {
   const version = getAppVersion();
-  return `https://download.kadalingo.top/kadalingo-${version}-Setup.exe`;
+  return `https://download1.kadalingo.top/releases/v${version}/kadalingo-${version}-Setup.exe`;
 };
