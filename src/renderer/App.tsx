@@ -12,10 +12,11 @@ import { KeyboardSoundProvider } from "./contexts/KeyboardSoundContext";
 import { LLMProvider } from "./contexts/LLMContext";
 import { useFloatingMode } from "./hooks/useFloatingMode";
 import { Course } from "../data/types";
+import { VocabularyBooks } from "./page/VocabularyBooks";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<
-    "courses" | "practice" | "add"
+    "courses" | "practice" | "add" | "vocabulary"
   >("courses"); // 默认到课程页面
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -31,6 +32,8 @@ function App() {
         return <SentencePractice selectedCourse={selectedCourse} />;
       case "add":
         return <AddContent />;
+      case "vocabulary":
+        return <VocabularyBooks />;
       case "courses":
       default:
         return <Courses onStartCourse={handleStartCourse} />;

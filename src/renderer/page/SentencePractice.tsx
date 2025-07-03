@@ -10,6 +10,7 @@ import { Modal } from "../components/common";
 import { useFloatingMode } from "../hooks/useFloatingMode";
 import { Settings } from "../components/Settings";
 import { ProgressService } from "../services/progressService";
+import { vocabularyService } from "../services/vocabularyService";
 
 // 移动端检测 hook
 const useIsMobile = () => {
@@ -320,10 +321,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
 
       // Ctrl + R - 重置练习
-      if (e.ctrlKey && e.key === "r") {
-        e.preventDefault();
-        resetGame();
-      }
+      // if (e.ctrlKey && e.key === "r") {
+      //   e.preventDefault();
+      //   resetGame();
+      // }
     };
 
     document.addEventListener("keydown", handleGlobalKeyPress);
@@ -452,40 +453,30 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       }
     }
   };
-  const checkSingleWord = (idx: number) => {
+  const checkSingleWord = async (idx: number) => {
     if (!currentSentence) return;
 
     const parsedTokens = parseWordsAndPunctuation(currentSentence.english);
     const userWord = normalizeWord(wordInputs[idx] || "");
     const correctWord = normalizeWord(parsedTokens[idx]?.word || "");
+    const originalWord = parsedTokens[idx]?.word || ""; // 获取原始单词，未经过normalize
 
     const isWordCorrect = userWord === correctWord;
+    
+    // 只有当单词不包含单引号时，才更新词汇学习状态
+    if (!originalWord.includes("'")) {
+      vocabularyService.processWordInput(correctWord, isWordCorrect);
+    }
+
     setWordResults((prev) => {
       const newResults = [...prev];
       newResults[idx] = isWordCorrect;
       return newResults;
     });
 
-    // 如果单词错误，添加抖动效果
-    if (!isWordCorrect) {
-      setShakingInputs((prev) => {
-        const newShaking = [...prev];
-        newShaking[idx] = true;
-        return newShaking;
-      });
-
-      // 500毫秒后移除抖动效果
-      setTimeout(() => {
-        setShakingInputs((prev) => {
-          const newShaking = [...prev];
-          newShaking[idx] = false;
-          return newShaking;
-        });
-      }, 500);
-    } else {
-      // 单词正确的情况
+    if (isWordCorrect) {
+      // 如果不是最后一个单词，自动聚焦到下一个输入框
       if (idx < parsedTokens.length - 1) {
-        // 如果不是最后一个单词，跳转到下一个输入框
         const nextInput = document.querySelector(
           `input[data-word-index="${idx + 1}"]`
         ) as HTMLInputElement;
@@ -500,13 +491,16 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             normalizeWord(parsedTokens[index]?.word || "")
           );
         });
+
         if (allWordsCorrect) {
           // 所有单词都正确，设置整体状态
           setIsCorrect(true);
-          setFeedback("进入下一句！🎉"); // 保存学习进度
+          setFeedback("进入下一句！🎉");
+
+          // 保存学习进度
           if (currentCourse && currentLesson) {
             const progressService = ProgressService.getInstance();
-            progressService.markSentenceCompleted(
+            await progressService.markSentenceCompleted(
               currentCourse.id,
               currentLesson.id,
               currentSentence.id,
@@ -524,6 +518,22 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
           }
         }
       }
+    } else {
+      // 如果单词错误，显示抖动动画
+      setShakingInputs((prev) => {
+        const newShaking = [...prev];
+        newShaking[idx] = true;
+        return newShaking;
+      });
+
+      // 300ms 后移除抖动动画
+      setTimeout(() => {
+        setShakingInputs((prev) => {
+          const newShaking = [...prev];
+          newShaking[idx] = false;
+          return newShaking;
+        });
+      }, 300);
     }
   };
   const showCorrectAnswer = async () => {
@@ -541,9 +551,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     const targetWordIndex = findWordToShow(currentWordIndex, parsedTokens);
 
     if (targetWordIndex >= 0) {
+      // 显示提示
       showHintForWord(targetWordIndex, parsedTokens);
     }
   };
+
   // 找到需要显示提示的单词
   const findWordToShow = (
     currentIndex: number,
@@ -575,15 +587,23 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     wordIndex: number,
     tokens: { word: string; punctuation: string }[]
   ) => {
+    const originalWord = tokens[wordIndex]?.word || "";
+
     // 显示提示
     const newShowHints = [...showHints];
     newShowHints[wordIndex] = true;
     setShowHints(newShowHints);
 
+    // 只有当单词不包含单引号时，才添加到生词本
+    const englishQuoteWord = originalWord
+        .replace(/[‘’“”]/g, (match) => (match === "‘" || match === "’" ? "'" : '"'));
+    vocabularyService.addToNewWords(englishQuoteWord);
+    
+    
     // 播放声音和读音
     playKeySound("enter");
     if (!isPlaying) {
-      speakEnglish(tokens[wordIndex]?.word || "");
+      speakEnglish(originalWord);
     }
 
     // 聚焦到该输入框

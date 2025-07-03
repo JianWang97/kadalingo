@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import type { PluginOption } from "vite";
 import { join, resolve } from "path";
 import fs from "fs";
+import packageJson from "./package.json";
 
 // https://vitejs.dev/config
 export default defineConfig(({ mode }) => {
@@ -67,6 +68,8 @@ export default defineConfig(({ mode }) => {
       __IS_WEB__: JSON.stringify(true),
       // 定义开发模式标识
       __DEV__: JSON.stringify(!isProduction),
+      // 注入应用版本号
+      __APP_VERSION__: JSON.stringify(packageJson.version),
     },
     server: {
       port: 3000,

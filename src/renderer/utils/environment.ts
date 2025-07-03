@@ -43,7 +43,18 @@ export const isWindows = () => {
 
 // 获取应用版本号
 export const getAppVersion = () => {
-  return '1.0.3'; // 从 package.json 中读取
+  // 在 Electron 环境中从 preload 暴露的 appInfo 中读取
+  if (isElectron()) {
+    return window.appInfo?.version;
+  }
+  
+  // 在 Web 环境中，从 Vite 注入的环境变量读取
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__;
+  }
+  
+  // 默认版本号
+  return '0.0.0';
 };
 
 // 获取桌面版下载链接

@@ -29,6 +29,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 9, english: "Have a seat.", chinese: "请坐", phonetic: "hæv ə siːt", difficulty: "easy" },
         { id: 10, english: "Make yourself at home.", chinese: "请随意", phonetic: "meɪk jɔːr ˈself æt hoʊm", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 2,
@@ -47,6 +48,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 19, english: "Can I have a receipt?", chinese: "可以给我发票吗？", phonetic: "kæn aɪ hæv ə rɪˈsiːt", difficulty: "easy" },
         { id: 20, english: "Thank you for your help.", chinese: "谢谢你的帮助", phonetic: "θæŋk juː fə jɔːr help", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 3,
@@ -65,6 +67,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 29, english: "How do I get there?", chinese: "我怎么去那里？", phonetic: "haʊ duː aɪ ɡɛt ðɛr", difficulty: "easy" },
         { id: 30, english: "Follow me.", chinese: "跟我来", phonetic: "ˈfɑloʊ miː", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 4,
@@ -81,8 +84,9 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 37, english: "It tastes great.", chinese: "味道很好", phonetic: "ɪt teɪsts ɡreɪt", difficulty: "easy" },
         { id: 38, english: "I am thirsty.", chinese: "我渴了", phonetic: "aɪ æm ˈθɜrsti", difficulty: "easy" },
         { id: 39, english: "Let's eat out.", chinese: "我们出去吃吧", phonetic: "lɛts iːt aʊt", difficulty: "easy" },
-        { id: 40, english: "Bon appétit!", chinese: "祝你好胃口！", phonetic: "bɔːn æpˈeti", difficulty: "easy" },
+        { id: 40, english: "Enjoy your meal!", chinese: "祝你好胃口！", phonetic: "ɪnˈdʒɔɪ jɔː miːl", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 5,
@@ -101,6 +105,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 49, english: "What do you do in your free time?", chinese: "你空闲时做什么？", phonetic: "wʌt duː juː duː ɪn jɔːr friː taɪm", difficulty: "easy" },
         { id: 50, english: "I watch movies.", chinese: "我看电影", phonetic: "aɪ wɒtʃ ˈmuːviz", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 6,
@@ -119,6 +124,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 59, english: "They are 5 and 8.", chinese: "他们5岁和8岁", phonetic: "ðeɪ ɑːr faɪv ənd eɪt", difficulty: "easy" },
         { id: 60, english: "That's nice.", chinese: "那很好", phonetic: "ðæts naɪs", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 7,
@@ -137,6 +143,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 69, english: "Let's sing together.", chinese: "我们一起唱吧", phonetic: "lɛts sɪŋ təˈɡɛðər", difficulty: "easy" },
         { id: 70, english: "That sounds fun.", chinese: "听起来很有趣", phonetic: "ðæt saʊndz fʌn", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 8,
@@ -155,6 +162,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 79, english: "You did a great job.", chinese: "你做得很好", phonetic: "juː dɪd ə ɡreɪt dʒɑb", difficulty: "easy" },
         { id: 80, english: "Let's try again.", chinese: "我们再试一次", phonetic: "lɛts traɪ əˈɡɛn", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 9,
@@ -173,6 +181,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 89, english: "Thank you, I will.", chinese: "谢谢，我会的", phonetic: "θæŋk ju˕ aɪ wɪl", difficulty: "easy" },
         { id: 90, english: "No problem.", chinese: "没问题", phonetic: "noʊ ˈprɒbləm", difficulty: "easy" },
       ],
+      courseId: 1
     },
     {
       id: 10,
@@ -191,6 +200,7 @@ export const beginnerEnglishDialogueCourse: Course = {
         { id: 99, english: "Take some photos.", chinese: "拍些照片吧", phonetic: "teɪk sʌm ˈfoʊtoʊz", difficulty: "easy" },
         { id: 100, english: "See you next time.", chinese: "下次见", phonetic: "siː juː nɛkst taɪm", difficulty: "easy" },
       ],
+      courseId: 1
     },
   ],
 };

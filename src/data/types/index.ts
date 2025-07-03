@@ -1,17 +1,19 @@
-// 基础数据类型定义
+
 
 // 中英文句子对
 export interface SentencePair {
   id: number;
-  chinese: string;
+  lessonId?: number; // 所属课时ID
   english: string;
+  chinese: string;
   phonetic?: string; // 新增：英文音标
-  difficulty: "easy" | "medium" | "hard";
+  difficulty?: "easy" | "medium" | "hard";
 }
 
 // 课程节次接口
 export interface Lesson {
   id: number;
+  courseId: number; // 所属课程ID
   title: string; // 节次标题，如 "第1节：基础问候"
   description?: string; // 节次描述
   sentences: SentencePair[]; // 该节次包含的句子练习
@@ -65,4 +67,47 @@ export interface ApiResponse<T> {
     total: number;
     totalPages: number;
   };
+}
+
+// 词汇状态枚举
+export enum VocabularyStatus {
+  NEW = 'NEW',         // 新词
+  ERROR = 'ERROR',     // 错词
+  MASTERED = 'MASTERED' // 已掌握
+}
+
+export interface WordDefinition {
+  definition: string;
+  example?: string;
+  synonyms: string[];
+  antonyms: string[];
+}
+
+export interface WordMeaning {
+  partOfSpeech: string;
+  definitions: WordDefinition[];
+}
+
+// 单词记录接口
+export interface WordRecord {
+  id?: number;
+  word: string;
+  translation?: string;
+  status: VocabularyStatus;
+  errorCount: number;
+  dateAdded: number;
+  // 新增的详细信息字段
+  phonetic?: string;
+  audioUrl?: string;
+  meanings?: WordMeaning[];
+}
+
+// 词汇本接口
+export interface VocabularyBook {
+  id?: number;          // 数据库主键
+  name: string;        // 词汇本名称
+  type: 'NEW' | 'ERROR' | 'MASTERED'; // 词汇本类型
+  words: WordRecord[]; // 包含的单词
+  createdAt: Date;     // 创建时间
+  updatedAt: Date;     // 更新时间
 }

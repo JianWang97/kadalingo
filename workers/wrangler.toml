@@ -1,0 +1,11 @@
+name = "translate"
+main = "translate.js"
+compatibility_date = "2024-01-01"
+
+ kv_namespaces = [
+   {binding = "TRANSLATE_CACHE", id = "9cc14d4d2a4a4dd8ad4734a085a0630d"},
+   {binding = "RATE_LIMITS", id = "84b5c19f3b774f89a51e127065038ced"}
+]
+
+
+

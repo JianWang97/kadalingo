@@ -39,6 +39,7 @@ export const sampleCourses: Course[] = [
           { id: 19, chinese: "我喜欢看电影", english: "I like watching movies.", phonetic: "/aɪ laɪk ˈwɒtʃɪŋ ˈmuːviz/", difficulty: "easy" },
           { id: 20, chinese: "我通常在家吃晚饭", english: "I usually have dinner at home.", phonetic: "/aɪ ˈjuːʒuəli hæv ˈdɪnə ət həʊm/", difficulty: "easy" },
         ],
+        courseId: 2
       },
       {
         id: 2,
@@ -67,6 +68,7 @@ export const sampleCourses: Course[] = [
           { id: 39, chinese: "我喜欢看纪录片", english: "I like watching documentaries.", phonetic: "/aɪ laɪk ˈwɒtʃɪŋ ˌdɒkjuˈmɛntəriz/", difficulty: "easy" },
           { id: 40, chinese: "我通常在家里吃早餐", english: "I usually have breakfast at home.", phonetic: "/aɪ ˈjuːʒuəli hæv ˈbrɛkfəst ət həʊm/", difficulty: "easy" },
         ],
+        courseId: 2
       },
       {
         id: 3,
@@ -95,6 +97,7 @@ export const sampleCourses: Course[] = [
           { id: 59, chinese: "我喜欢参加志愿者活动", english: "I like to participate in volunteer activities.", phonetic: "/aɪ laɪk tə pɑːˈtɪsɪpeɪt ɪn ˌvɒlənˈtɪə ækˈtɪvɪtiz/", difficulty: "medium" },
           { id: 60, chinese: "我相信努力会带来成功", english: "I believe hard work leads to success.", phonetic: "/aɪ bɪˈliːv hɑːd wɜːk liːdz tə səkˈses/", difficulty: "medium" },
         ],
+        courseId: 2
       },
       {
         id: 4,
@@ -123,6 +126,7 @@ export const sampleCourses: Course[] = [
           { id: 79, chinese: "创新精神是社会进步的源泉", english: "The spirit of innovation is the source of social progress.", phonetic: "/ðə ˈspɪrɪt əv ˌɪnəˈveɪʃən ɪz ðə sɔːs əv ˈsəʊʃl ˈprəʊɡres/", difficulty: "hard" },
           { id: 80, chinese: "高效的沟通有助于团队合作", english: "Efficient communication helps teamwork.", phonetic: "/ɪˈfɪʃnt kəˌmjuːnɪˈkeɪʃən helps ˈtiːmwɜːk/", difficulty: "hard" },
         ],
+        courseId: 2
       },
       {
         id: 5,
@@ -151,6 +155,7 @@ export const sampleCourses: Course[] = [
           { id: 99, chinese: "我认为社会进步需要每个人的努力", english: "I think social progress requires everyone's efforts.", phonetic: "/aɪ θɪŋk ˈsəʊʃl ˈprəʊɡres rɪˈkwaɪəz ˈevriwʌnz ˈefəts/", difficulty: "hard" },
           { id: 100, chinese: "我认为科技发展带来了便利", english: "I think technological development has brought convenience.", phonetic: "/aɪ θɪŋk ˌteknəˈlɒdʒɪkl dɪˈveləpmənt hæz brɔːt kənˈviːniəns/", difficulty: "hard" },
         ],
+        courseId: 2
       },
     ],
   },
@@ -192,6 +197,7 @@ export const sampleCourses: Course[] = [
           { id: 19, chinese: "请问有夜班车吗？", english: "Is there a night bus?", phonetic: "/ɪz ðeə ə naɪt bʌs/", difficulty: "easy" },
           { id: 20, chinese: "请问这趟车到哪里？", english: "Where does this bus go?", phonetic: "/weə dʌz ðɪs bʌs ɡəʊ/", difficulty: "easy" },
         ],
+        courseId: 3
       },
       {
         id: 2,
@@ -220,6 +226,7 @@ export const sampleCourses: Course[] = [
           { id: 39, chinese: "请问退房时间是几点？", english: "What time is checkout?", phonetic: "/wɒt taɪm ɪz ˈtʃekaʊt/", difficulty: "easy" },
           { id: 40, chinese: "请问有无烟房吗？", english: "Is there a non-smoking room?", phonetic: "/ɪz ðeə ə nɒn ˈsməʊkɪŋ ruːm/", difficulty: "easy" },
         ],
+        courseId: 3
       },
       {
         id: 3,
@@ -248,6 +255,7 @@ export const sampleCourses: Course[] = [
           { id: 59, chinese: "请问有失物招领处吗？", english: "Is there a lost and found?", phonetic: "/ɪz ðeə ə lɒst ənd faʊnd/", difficulty: "easy" },
           { id: 60, chinese: "请问哪里可以打电话？", english: "Where can I make a phone call?", phonetic: "/weə kæn aɪ meɪk ə fəʊn kɔːl/", difficulty: "easy" },
         ],
+        courseId: 3
       },
       {
         id: 4,
@@ -276,6 +284,7 @@ export const sampleCourses: Course[] = [
           { id: 79, chinese: "请问可以扫码支付吗？", english: "Can I pay by QR code?", phonetic: "/kæn aɪ peɪ baɪ kjuː ɑː kəʊd/", difficulty: "easy" },
           { id: 80, chinese: "请问有外卖服务吗？", english: "Is there takeout service?", phonetic: "/ɪz ðeə ˈteɪkaʊt ˈsɜːvɪs/", difficulty: "easy" },
         ],
+        courseId: 3
       },
       {
         id: 5,
@@ -304,6 +313,7 @@ export const sampleCourses: Course[] = [
           { id: 99, chinese: "请帮我报警并联系大使馆", english: "Please call the police and contact the embassy for me.", phonetic: "/pliːz kɔːl ðə pəˈliːs ənd ˈkɒntækt ði ˈembəsi fə miː/", difficulty: "medium" },
           { id: 100, chinese: "请问急救电话是多少？", english: "What is the emergency number?", phonetic: "/wɒt ɪz ði ɪˈmɜːdʒənsi ˈnʌmbə/", difficulty: "medium" },
         ],
+        courseId: 3
       },
     ],
   },
