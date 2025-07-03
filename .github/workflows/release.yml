@@ -135,19 +135,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.tag_name }}
-          name: 咔哒 ${{ steps.get_version.outputs.tag_name }} - 语言学习句子练习工具
+          name: 咔哒 ${{ steps.get_version.outputs.tag_name }} - 英语学习句子练习工具
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           body: |
-            🚀 **咔哒语言学习工具** ${{ steps.get_version.outputs.tag_name }} 版本发布
+            🚀 **咔哒英语学习工具** ${{ steps.get_version.outputs.tag_name }} 版本发布
             
             ## 📥 下载说明
             - **`kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe`**: 完整安装包，推荐大多数用户使用
             - **`kadalingo ${{ steps.get_version.outputs.version }}.exe`**: 便携版，无需安装直接运行
             
             ## ✨ 主要功能
-            - 🎯 语言学习句子练习功能
-            - 🌍 支持多语言界面
+            - 🎯 英语学习句子练习功能
+            - 📚 生/错词本
             - 🎨 现代化的用户界面设计
             - 📱 响应式设计，适配不同屏幕尺寸
             - 📝 AI 生成课程内容，助力高效学习
@@ -155,7 +155,7 @@ jobs:
             ## 🔧 安装说明
             1. 下载对应的安装包
             2. 运行安装程序并按照提示安装
-            3. 启动应用开始语言学习之旅
+            3. 启动应用开始英语学习之旅
 
             如有问题，请访问 [项目主页](https://github.com/JianWang97/kadalingo) 或提交 [Issue](https://github.com/JianWang97/kadalingo/issues)。
           files: build/*.exe
@@ -185,23 +185,59 @@ jobs:
         run: |
           aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          aws configure set region auto
-          aws configure set endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          aws configure set region us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
 
       - name: Upload to Cloudflare R2
         if: success() && steps.check_version.outputs.should_release == 'true'
         run: |
+          # 设置 R2 端点 URL
+          $R2_ENDPOINT = "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          echo "Using R2 endpoint: $R2_ENDPOINT"
+          echo "Bucket name: ${{ secrets.R2_BUCKET_NAME }}"
+          echo "Version: ${{ steps.get_version.outputs.version }}"
+          echo "Tag name: ${{ steps.get_version.outputs.tag_name }}"
+          
+          # 检查文件是否存在
+          if (Test-Path "build/kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe") {
+            echo "✓ Setup file exists"
+          } else {
+            echo "❌ Setup file not found"
+            dir build
+          }
+          
+          if (Test-Path "build/kadalingo ${{ steps.get_version.outputs.version }}.exe") {
+            echo "✓ Portable file exists"
+          } else {
+            echo "❌ Portable file not found"
+            dir build
+          }
+          
           # 上传安装包
-          aws s3 cp "build/kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          echo "Uploading setup file..."
+          aws s3 cp "build/kadalingo-${{ steps.get_version.outputs.version }}-Setup.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/" --endpoint-url $R2_ENDPOINT
+          
           # 上传便携版
-          aws s3 cp "build/kadalingo ${{ steps.get_version.outputs.version }}.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/"
+          echo "Uploading portable file..."
+          aws s3 cp "build/kadalingo ${{ steps.get_version.outputs.version }}.exe" "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/" --endpoint-url $R2_ENDPOINT
+          
           # 生成并上传版本信息文件
+          echo "Generating version info..."
           $versionInfo = @{
             latest_version = "${{ steps.get_version.outputs.version }}"
             release_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           } | ConvertTo-Json
           $versionInfo | Set-Content -Path version.json
-          aws s3 cp version.json "s3://${{ secrets.R2_BUCKET_NAME }}/latest-version.json"
+          echo "Version info content:"
+          Get-Content version.json
+          
+          echo "Uploading version info..."
+          aws s3 cp version.json "s3://${{ secrets.R2_BUCKET_NAME }}/latest-version.json" --endpoint-url $R2_ENDPOINT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           
       - name: Skip release notification
         if: steps.check_version.outputs.should_release == 'false'
