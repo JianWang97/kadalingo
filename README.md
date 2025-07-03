@@ -5,6 +5,7 @@
 ## 功能特色
 
 - 📝 **句子翻译练习** - 中英文互译
+- 📝 **生/错词本** - 记录生错词 
 - 🔊 **语音合成** - TTS语音播放功能
 - 🎨 **Material Design 3** - 现代化界面设计
 - 💾 **本地存储** - 基于 IndexedDB 的离线数据存储
@@ -87,7 +88,7 @@ npm run type-check
 
 ## 许可证
 
-GPL-3.0 License
+ Apache License
 
 ---
 
