@@ -68,7 +68,7 @@ jobs:
           
           echo "current_version=$currentVersion" >> $env:GITHUB_OUTPUT
           echo "tag_name=$tagName" >> $env:GITHUB_OUTPUT
-          echo "tag_exists=$tagExists" >> $env:GITHUB_OUTPUT
+          echo "tag_exists=$($tagExists.ToString().ToLower())" >> $env:GITHUB_OUTPUT
       
       - name: Install dependencies
         if: steps.check_version.outputs.should_release == 'true'
