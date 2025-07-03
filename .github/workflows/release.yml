@@ -1,6 +1,7 @@
 name: Release
 
 on:
+
   workflow_dispatch:  # 允许手动触发
     inputs:
       version:
@@ -42,14 +43,21 @@ jobs:
           
           # 检查该版本的 tag 是否已经存在
           $tagExists = $false
-          try {
-            git rev-parse --verify "refs/tags/$tagName" 2>$null
-            if ($LASTEXITCODE -eq 0) {
-              $tagExists = $true
-            }
-          } catch {
-            $tagExists = $false
+          echo "Checking if tag $tagName exists..."
+          
+          # 使用 git tag -l 来检查标签是否存在，这种方式更可靠
+          $existingTag = git tag -l $tagName
+          if ($existingTag -eq $tagName) {
+            $tagExists = $true
+            echo "Tag $tagName exists"
+          } else {
+            echo "Tag $tagName does not exist"
           }
+          
+          # 输出调试信息
+          echo "Tag exists: $tagExists"
+          echo "All existing tags:"
+          git tag -l "v*" | Sort-Object | Select-Object -Last 5
           
           # 如果是手动触发，则允许继续
           if ("${{ github.event_name }}" -eq "workflow_dispatch") {
