@@ -1,0 +1,183 @@
+name: Test R2 Connection
+
+on:
+    push:        # 代码推送时自动触发
+        branches:
+            - wj_main_test
+    workflow_dispatch:  # 允许手动触发
+        inputs:
+            bucket_name:
+                description: 'R2 存储桶名称 (可选，默认使用 secrets 中的配置)'
+                required: false
+                type: string
+
+jobs:
+  test-r2:
+    runs-on: windows-latest
+    environment: cloudfare
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install AWS CLI
+        run: |
+          echo "Installing AWS CLI..."
+          Invoke-WebRequest -Uri "https://awscli.amazonaws.com/AWSCLIV2.msi" -OutFile "AWSCLIV2.msi"
+          Start-Process msiexec.exe -Wait -ArgumentList "/i AWSCLIV2.msi /quiet"
+          aws --version
+          echo "✅ AWS CLI installed successfully"
+
+      - name: Configure AWS CLI for Cloudflare R2
+        run: |
+          echo "Configuring AWS CLI for Cloudflare R2..."
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set region us-east-1
+          echo "✅ AWS CLI configured"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+      - name: Test R2 Connection and Bucket Access
+        run: |
+          # 设置变量
+          $BUCKET_NAME = if ("${{ github.event.inputs.bucket_name }}" -ne "") { 
+            "${{ github.event.inputs.bucket_name }}" 
+          } else { 
+            "${{ secrets.R2_BUCKET_NAME }}" 
+          }
+          $R2_ENDPOINT = "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          
+          echo "=== Cloudflare R2 连接测试 ==="
+          echo "端点: $R2_ENDPOINT"
+          echo "存储桶名称: $BUCKET_NAME"
+          echo "账户 ID: ${{ secrets.R2_ACCOUNT_ID }}"
+          echo ""
+          
+          # 显示 AWS CLI 配置
+          echo "=== AWS CLI 配置 ==="
+          aws configure list
+          echo ""
+          
+          # 测试连接并列出所有存储桶
+          echo "=== 列出所有可用存储桶 ==="
+          try {
+            $allBuckets = aws s3 ls --endpoint-url $R2_ENDPOINT 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              echo "✅ 成功连接到 Cloudflare R2"
+              echo "可用存储桶:"
+              echo $allBuckets
+            } else {
+              echo "❌ 连接失败"
+              echo $allBuckets
+              exit 1
+            }
+          } catch {
+            echo "❌ 列出存储桶时发生错误: $_"
+            exit 1
+          }
+          echo ""
+          
+          # 测试目标存储桶
+          echo "=== 测试目标存储桶 '$BUCKET_NAME' ==="
+          try {
+            $bucketContent = aws s3 ls "s3://$BUCKET_NAME" --endpoint-url $R2_ENDPOINT 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              echo "✅ 存储桶 '$BUCKET_NAME' 存在且可访问"
+              echo "存储桶内容:"
+              echo $bucketContent
+            } else {
+              echo "❌ 存储桶 '$BUCKET_NAME' 不存在或无法访问"
+              echo $bucketContent
+              
+              # 尝试创建存储桶
+              echo "尝试创建存储桶..."
+              $createResult = aws s3 mb "s3://$BUCKET_NAME" --endpoint-url $R2_ENDPOINT 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                echo "✅ 存储桶 '$BUCKET_NAME' 创建成功"
+                echo $createResult
+              } else {
+                echo "❌ 创建存储桶失败"
+                echo $createResult
+                exit 1
+              }
+            }
+          } catch {
+            echo "❌ 测试存储桶时发生错误: $_"
+            exit 1
+          }
+          echo ""
+          
+          # 测试上传功能
+          echo "=== 测试文件上传功能 ==="
+          $testFile = "test-upload-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
+          $testContent = "This is a test file created at $(Get-Date)"
+          
+          try {
+            # 创建测试文件
+            $testContent | Set-Content -Path $testFile
+            echo "创建测试文件: $testFile"
+            
+            # 上传测试文件
+            $uploadResult = aws s3 cp $testFile "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              echo "✅ 文件上传成功"
+              echo $uploadResult
+              
+              # 验证上传
+              $listResult = aws s3 ls "s3://$BUCKET_NAME/test/" --endpoint-url $R2_ENDPOINT 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                echo "✅ 上传验证成功"
+                echo $listResult
+                
+                # 清理测试文件
+                $deleteResult = aws s3 rm "s3://$BUCKET_NAME/test/$testFile" --endpoint-url $R2_ENDPOINT 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                  echo "✅ 测试文件清理完成"
+                } else {
+                  echo "⚠️ 测试文件清理失败，但不影响主要功能"
+                  echo $deleteResult
+                }
+              } else {
+                echo "❌ 上传验证失败"
+                echo $listResult
+              }
+            } else {
+              echo "❌ 文件上传失败"
+              echo $uploadResult
+              exit 1
+            }
+          } catch {
+            echo "❌ 测试上传时发生错误: $_"
+            exit 1
+          } finally {
+            # 清理本地测试文件
+            if (Test-Path $testFile) {
+              Remove-Item $testFile -Force
+            }
+          }
+          echo ""
+          
+          echo "🎉 所有测试都通过了！Cloudflare R2 配置正确。"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "=== 测试总结 ==="
+          if ($LASTEXITCODE -eq 0) {
+            echo "✅ 所有 R2 连接测试都成功完成"
+            echo "您的 Cloudflare R2 配置是正确的，可以在主发布工作流中使用。"
+          } else {
+            echo "❌ R2 连接测试失败"
+            echo "请检查以下配置:"
+            echo "- R2_ACCESS_KEY_ID"
+            echo "- R2_SECRET_ACCESS_KEY" 
+            echo "- R2_ACCOUNT_ID"
+            echo "- R2_BUCKET_NAME"
+            echo "确保这些 secrets 在 GitHub 仓库设置中正确配置。"
+          }
