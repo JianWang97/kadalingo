@@ -551,13 +551,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     const targetWordIndex = findWordToShow(currentWordIndex, parsedTokens);
 
     if (targetWordIndex >= 0) {
-      // 将当前单词添加到生词本
-      vocabularyService.addToNewWords(parsedTokens[targetWordIndex].word);
-      
       // 显示提示
       showHintForWord(targetWordIndex, parsedTokens);
     }
   };
+
   // 找到需要显示提示的单词
   const findWordToShow = (
     currentIndex: number,
@@ -597,9 +595,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
     setShowHints(newShowHints);
 
     // 只有当单词不包含单引号时，才添加到生词本
-    if (!originalWord.includes("'")) {
-      vocabularyService.addToNewWords(originalWord);
-    }
+    const englishQuoteWord = originalWord
+        .replace(/[‘’“”]/g, (match) => (match === "‘" || match === "’" ? "'" : '"'));
+    vocabularyService.addToNewWords(englishQuoteWord);
+    
     
     // 播放声音和读音
     playKeySound("enter");

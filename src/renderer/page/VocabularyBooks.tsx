@@ -18,26 +18,30 @@ const WordList: React.FC<WordListProps> = ({ words, onMarkAsMastered }) => (
     ) : (
       <ul className="divide-y divide-gray-100">
         {words.map((word) => (
-          <li key={word.id} className="py-3 flex justify-between items-center group hover:bg-gray-50 px-4 -mx-4 rounded-lg transition-colors">
-            <div className="flex items-center space-x-3">
+          <li
+            key={word.id}
+            className="py-3 flex items-center group hover:bg-gray-50 px-4 -mx-4 rounded-lg transition-colors"
+          >
+            <div className="flex items-center space-x-3 flex-1">
               <span className="font-medium text-base text-gray-900">{word.word}</span>
-              {word.translation && (
-                <span className="text-gray-600">·</span>
-              )}
-              {word.translation && (
-                <span className="text-gray-600">{word.translation}</span>
-              )}
             </div>
-            <div className="flex items-center space-x-3">
+            
+            {word.translation && (
+              <div className="flex items-center justify-center flex-1">
+                <span className="text-gray-600 text-base">{word.translation}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-end min-w-[120px] space-x-3">
               {word.errorCount > 0 && (
-                <span className="text-sm text-red-500">
-                  {word.errorCount}次
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-100">
+                  {word.errorCount}
                 </span>
               )}
               {onMarkAsMastered && word.status !== VocabularyStatus.MASTERED && (
                 <button
                   onClick={() => onMarkAsMastered(word.word)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded"
+                  className="px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded transition-colors"
                 >
                   已掌握
                 </button>
@@ -99,6 +103,11 @@ export const VocabularyBooks: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* 翻译提示 */}
+      <div className="mb-4 text-center">
+        <span className="text-xs text-gray-400">翻译由百度翻译API提供</span>
+      </div>
+      
       {/* Tab 导航 */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">

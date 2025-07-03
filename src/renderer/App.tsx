@@ -12,7 +12,7 @@ import { KeyboardSoundProvider } from "./contexts/KeyboardSoundContext";
 import { LLMProvider } from "./contexts/LLMContext";
 import { useFloatingMode } from "./hooks/useFloatingMode";
 import { Course } from "../data/types";
-import { VocabularyBooks } from "./components/VocabularyBooks";
+import { VocabularyBooks } from "./page/VocabularyBooks";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<

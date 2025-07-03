@@ -1,11 +1,11 @@
-import { WordRecord, VocabularyStatus, WordMeaning } from '../../data/types';
+import { WordRecord, VocabularyStatus } from '../../data/types';
 import { RepositoryFactory, getStorageConfig } from '../../data/repositories/RepositoryFactory';
 import { dictionaryService } from './dictionaryService';
+import { getLocalTranslation } from '../../data/commonWordsDictionary';
 
 class VocabularyService {
   private static instance: VocabularyService;
   private static wordTranslateQueue: string[] = [];
-  private constructor() {}
 
   public static getInstance(): VocabularyService {
     if (!VocabularyService.instance) {
@@ -14,7 +14,23 @@ class VocabularyService {
     return VocabularyService.instance;
   }
 
-  // 添加到生词本
+  // 获取单词翻译（优先使用本地字典）
+  private async getWordTranslation(word: string): Promise<string | null> {
+    // 首先检查本地字典
+    const localTranslation = getLocalTranslation(word);
+    if (localTranslation) {
+      return localTranslation;
+    }
+    
+    // 如果本地字典没有，则使用API获取
+    try {
+      return await dictionaryService.getChineseTranslation(word);
+    } catch (error) {
+      console.warn(`Failed to get translation for "${word}":`, error);
+      return null;
+    }
+  }
+
   public async addToNewWords(word: string): Promise<void> {
     try {
       const factory = RepositoryFactory.getInstance();
@@ -24,14 +40,17 @@ class VocabularyService {
       // 检查单词是否已存在
       const existingWord = await repo.getWordByValue(word);
       if (existingWord) {
+        console.log(`Word "${word}" already exists in vocabulary.`);
+        
         return; // 单词已存在，不重复添加
       }
       if (VocabularyService.wordTranslateQueue.includes(word)) {
+        console.log(`Word "${word}" is already being translated.`);
         return;
       }
       VocabularyService.wordTranslateQueue.push(word);
-      // 获取单词中文翻译
-      const translation = await dictionaryService.getChineseTranslation(word);
+      // 使用新的翻译方法（优先本地字典）
+      const translation = await this.getWordTranslation(word);
       VocabularyService.wordTranslateQueue.splice(VocabularyService.wordTranslateQueue.indexOf(word), 1);
       // 创建新的单词记录
       const newWord: Omit<WordRecord, 'id'> = {
@@ -74,7 +93,7 @@ class VocabularyService {
 
       // Only add new words if they are incorrect
       if (!isCorrect) {
-        const translation = await dictionaryService.getChineseTranslation(word);
+        const translation = await this.getWordTranslation(word);
         const newWord: Omit<WordRecord, 'id'> = {
           word,
           translation: translation || undefined,
@@ -166,4 +185,4 @@ class VocabularyService {
   }
 }
 
-export const vocabularyService = VocabularyService.getInstance(); 
+export const vocabularyService = VocabularyService.getInstance();
