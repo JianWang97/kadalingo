@@ -2,6 +2,7 @@
 declare global {
   const __IS_WEB__: boolean; // Web 环境标识
   const __DEV__: boolean; // 开发环境标识
+  const __APP_VERSION__: string; // 应用版本号
   
   interface Window {
     electronAPI?: {
@@ -13,6 +14,9 @@ declare global {
       isFloatingMode: () => Promise<boolean>;
       openExternalLink: (url: string) => Promise<void>;
       setAlwaysOnTop: (value: boolean) => Promise<void>;
+    };
+    appInfo?: {
+      version: string;
     };
   }
 }

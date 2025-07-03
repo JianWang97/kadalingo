@@ -18,7 +18,7 @@ import { useFloatingModeSettings } from "../contexts/FloatingModeContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
 import { useLLM, type LLMSettings } from "../contexts/LLMContext";
 import { Modal, Toast } from "./common";
-import { isElectron, isWindows, getDesktopDownloadUrl } from "../utils/environment";
+import { getAppVersion, isElectron, isWindows } from "../utils/environment";
 
 interface SettingsProps {
   className?: string;
@@ -1068,7 +1068,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <p>版本: 1.0.3</p>
+                  <p>版本: {getAppVersion()}</p>
                 </div>
               </div>
             </div>
