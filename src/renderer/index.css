@@ -50,15 +50,13 @@ body {
 
 /* 浮窗模式 */
 .floating-mode-background {
-  background: transparent !important;
-}
-.floating-mode-content {
   background: rgba(255, 255, 255, var(--floating-opacity, 0.3)) !important;
   border-radius: 8px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
 .floating-mode-text {
   color: rgba(0, 0, 0, 1) !important;
 }
@@ -205,4 +203,11 @@ body {
   0% { box-shadow: 0 2px 8px rgba(103, 80, 164, 0.15), 0 0 0 1px rgba(103, 80, 164, 0.1); }
   50% { box-shadow: 0 4px 16px rgba(103, 80, 164, 0.25), 0 0 0 1px rgba(103, 80, 164, 0.2); }
   100% { box-shadow: 0 2px 8px rgba(103, 80, 164, 0.15), 0 0 0 1px rgba(103, 80, 164, 0.1); }
+}
+/* Electron 拖拽区域样式 */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
 }
