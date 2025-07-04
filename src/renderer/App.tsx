@@ -103,8 +103,8 @@ function App() {
                       : isMobile
                         ? ""
                         : isSidebarExpanded
-                          ? "ml-56 transition-all duration-300"
-                          : "ml-[48px] transition-all duration-300"
+                          ? "pl-56 transition-all duration-300"
+                          : "pl-[48px] transition-all duration-300"
                   }`}
                 >
                     {renderPage()}

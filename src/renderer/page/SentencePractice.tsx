@@ -741,31 +741,30 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   if (isAllSentencesCompleted) {
     return (
       <div
-        className={`h-full flex items-center justify-center bg-gray-50 ${
+        className={`h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900 ${
           isFloating ? "floating-mode-content drag-region" : ""
         }`}
       >
-        {" "}
         <div className="text-center max-w-sm mx-auto px-6">
           <div className="text-5xl mb-6">🎉</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-3">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
             {currentLessonIndex === allLessons.length - 1
               ? "课程全部完成！"
               : "练习完成"}
           </h2>
-          <div className="text-gray-600 mb-6 space-y-1">
+          <div className="text-gray-600 dark:text-gray-300 mb-6 space-y-1">
             <p>完成 {sentences.length} 个句子</p>
             {currentLessonIndex === allLessons.length - 1 &&
               allLessons.length > 1 && (
-                <p className="text-green-600 font-medium">
+                <p className="text-green-600 dark:text-green-400 font-medium">
                   🌟 恭喜您完成了全部 {allLessons.length} 个课时！
                 </p>
               )}
-          </div>{" "}
+          </div>
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => restartPractice().catch(console.error)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-drag"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors no-drag"
             >
               再练一遍
             </button>
