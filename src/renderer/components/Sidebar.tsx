@@ -5,6 +5,9 @@ interface SidebarProps {
   currentPage: string;
   onPageChange: (page: "courses" | "practice" | "add" | "vocabulary") => void;
   onOpenSettings?: () => void;
+  isExpanded?: boolean;
+  onExpand?: () => void;
+  onCollapse?: () => void;
 }
 
 interface MenuItem {
@@ -68,19 +71,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentPage,
   onPageChange,
   onOpenSettings,
+  isExpanded,
+  onExpand,
+  onCollapse,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useIsMobile();
 
   const handleMouseEnter = () => {
-    if (!isMobile) {
-      setIsExpanded(true);
+    if (!isMobile && onExpand) {
+      onExpand();
     }
   };
-  
+
   const handleMouseLeave = () => {
-    if (!isMobile) {
-      setIsExpanded(false);
+    if (!isMobile && onCollapse) {
+      onCollapse();
     }
   };
 
@@ -111,12 +116,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   flex-1 py-2 px-1 rounded-lg
                   transition-all duration-200 ease-out
                   touch-manipulation
-                  ${isAI 
-                    ? isActive 
-                      ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30" 
+                  ${isAI
+                    ? isActive
+                      ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30"
                       : "hover:bg-gray-50 dark:hover:bg-gray-800"
-                    : isActive 
-                      ? "bg-purple-100 dark:bg-purple-900/30" 
+                    : isActive
+                      ? "bg-purple-100 dark:bg-purple-900/30"
                       : "hover:bg-gray-50 dark:hover:bg-gray-800"
                   }
                 `}
@@ -127,25 +132,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <item.icon
                     className={`
                       w-6 h-6 transition-colors duration-200
-                      ${isAI 
-                        ? "text-purple-500 drop-shadow-sm" 
-                        : isActive 
-                          ? "text-purple-600 dark:text-purple-400" 
+                      ${isAI
+                        ? "text-purple-500 drop-shadow-sm"
+                        : isActive
+                          ? "text-purple-600 dark:text-purple-400"
                           : "text-gray-600 dark:text-gray-400"
                       }
                     `}
                   />
-                  {isActive && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
-                  )}
                 </div>
                 <span
                   className={`
                     text-xs mt-1 font-medium
-                    ${isAI 
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600" 
-                      : isActive 
-                        ? "text-purple-600 dark:text-purple-400" 
+                    ${isAI
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600"
+                      : isActive
+                        ? "text-purple-600 dark:text-purple-400"
                         : "text-gray-600 dark:text-gray-400"
                     }
                   `}
@@ -182,12 +184,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`
-        sidebar-surface dark:sidebar-surface
+        fixed left-0 top-0
+        ${isExpanded ? "w-56" : "w-12"}
+        flex flex-col h-screen z-50
         shadow-lg
         transition-all duration-300 ease-out
-        ${isExpanded ? "w-56" : "w-12"}
-        flex flex-col h-full relative
         backdrop-blur-sm
+        bg-white dark:bg-gray-900
+        border-r border-gray-200 dark:border-gray-700
       `}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -195,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       aria-label="主导航"
     >
       {/* Navigation Menu */}
-      <nav className={`flex-1 p-3 space-y-2`} role="menu">
+      <nav className="flex-1 p-3 space-y-2" role="menu">
         {menuItems.map((item) => {
           const isActive = currentPage === item.id;
           const isAI = item.isAI;
@@ -204,18 +208,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               onClick={() => onPageChange(item.id)}
               className={`
-                w-full flex items-center rounded-xl
+                w-full flex items-center rounded-xl relative
                 transition-all duration-300 ease-out
                 ${isExpanded ? "p-3" : "p-0"}
-                ${
-                  isAI
-                    ? isActive && isExpanded
-                      ? "sidebar-item-active-ai"
-                      : "sidebar-item-ai"
-                    : isActive && isExpanded
-                    ? "sidebar-item-active"
-                    : "sidebar-item"
+                ${isAI
+                  ? isActive && isExpanded
+                    ? "bg-gradient-to-r from-purple-400/80 to-blue-400/80 dark:from-purple-900/60 dark:to-blue-900/60 shadow-md"
+                    : "hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100 dark:hover:from-purple-900/20 dark:hover:to-blue-900/20"
+                  : isActive && isExpanded
+                    ? "bg-purple-100 dark:bg-purple-900/60 shadow"
+                    : "hover:bg-gray-50 dark:hover:bg-gray-800"
                 }
+                group
               `}
               title={!isExpanded ? item.label : undefined}
               role="menuitem"
@@ -236,9 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ${isExpanded ? "w-8 h-8" : "w-6 h-6"}
                     ${
                       isAI
-                        ? "text-purple-500 drop-shadow-sm"
+                        ? "text-blue-500 dark:text-blue-400 drop-shadow-sm"
                         : isActive
-                        ? "text-purple-600 dark:text-purple-400"
+                        ? "text-purple-600 dark:text-purple-300"
                         : "text-gray-600 dark:text-gray-400"
                     }
                   `}
@@ -249,60 +253,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`
                   ml-4 text-left transition-all duration-300
                   ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}
+                  overflow-hidden
                 `}
               >
                 <div
                   className={`
-                  text-sm font-medium whitespace-nowrap leading-tight
-                  ${
-                    isAI
-                      ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600"
-                      : ""
-                  }
-                `}
+                    text-sm font-medium whitespace-nowrap leading-tight
+                    ${
+                      isAI
+                        ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 dark:from-purple-300 dark:via-blue-400 dark:to-cyan-400"
+                        : isActive
+                        ? "text-purple-600 dark:text-purple-300"
+                        : "text-gray-700 dark:text-gray-200"
+                    }
+                  `}
                 >
                   {item.label}
                 </div>
                 {item.description && (
                   <div
                     className={`
-                    text-xs whitespace-nowrap mt-0.5
-                    ${
-                      isAI
-                        ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400"
-                        : "text-on-surface-variant dark:text-on-surface-variant-dark"
-                    }
-                  `}
+                      text-xs whitespace-nowrap mt-0.5
+                      ${
+                        isAI
+                          ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 dark:from-purple-200 dark:via-blue-300 dark:to-cyan-300"
+                          : "text-gray-500 dark:text-gray-400"
+                      }
+                    `}
                   >
                     {item.description}
                   </div>
                 )}
               </div>
               {/* Active Indicator */}
-              {isActive && (
-                <div
-                  className={`
-                    absolute right-0 w-1 h-8 rounded-l-full
-                    transition-all duration-200
-                    ${isExpanded ? "opacity-0" : "opacity-100"}
-                    bg-primary
-                  `}
-                />
-              )}
             </button>
           );
         })}
       </nav>
       
       {/* Settings Button */}
-      <footer className={`${isExpanded ? "p-3" : "p-3"}`}>
+      <footer className={`mt-auto ${isExpanded ? "p-3" : "p-3"}`}>
         <button
           onClick={onOpenSettings}
           className={`
             w-full flex items-center rounded-xl
             transition-all duration-300 ease-out
             ${isExpanded ? "p-3" : "p-1"}
-            sidebar-item
+            hover:bg-gray-50 dark:hover:bg-gray-800
+            group
           `}
           title={!isExpanded ? "设置" : undefined}
           role="menuitem"
@@ -310,10 +308,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Icon */}
           <div
             className={`
-            flex-shrink-0 flex items-center justify-center
-            transition-all duration-300
-            ${isExpanded ? "w-6 h-6" : "w-4 h-4"}
-          `}
+              flex-shrink-0 flex items-center justify-center
+              transition-all duration-300
+              ${isExpanded ? "w-6 h-6" : "w-4 h-4"}
+            `}
           >
             <MdSettings className={`
               transition-colors duration-300
@@ -326,12 +324,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`
               ml-4 text-left transition-all duration-300
               ${isExpanded ? "w-auto opacity-100" : "w-0 opacity-0"}
+              overflow-hidden
             `}
           >
-            <div className="text-sm font-medium whitespace-nowrap leading-tight">
+            <div className="text-sm font-medium whitespace-nowrap leading-tight text-gray-700 dark:text-gray-200">
               设置
             </div>
-            <div className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark whitespace-nowrap mt-0.5">
+            <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap mt-0.5">
               应用设置
             </div>
           </div>

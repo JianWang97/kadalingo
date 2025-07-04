@@ -68,7 +68,7 @@ const AddContent: React.FC = () => {
     setIsDrawerOpen(false);
   };
   return (
-    <div className="h-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50">
+    <div className="min-h-[calc(100vh-3rem)] w-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       <div className="h-full overflow-y-auto p-4">
         <div className="max-w-5xl mx-auto">
           {/* 错误信息 */}
@@ -148,8 +148,8 @@ const AddContent: React.FC = () => {
             </div>
           )}{" "}
           {/* 生成配置表单 */}
-          <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl border border-white/20 mb-4 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 p-4">
+          <div className="backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/40 mb-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -181,7 +181,7 @@ const AddContent: React.FC = () => {
                 {/* 左侧 - 课程主题和描述 */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                       课程主题 *
                     </label>
                     <div className="relative">
@@ -195,7 +195,7 @@ const AddContent: React.FC = () => {
                             topic: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none transition-all duration-200 placeholder-gray-400 text-sm"
+                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-sm text-gray-900 dark:text-gray-100"
                         placeholder="例如：日常对话、商务英语、旅游英语等"
                       />
                       <svg
@@ -215,7 +215,7 @@ const AddContent: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                       课程描述（可选）
                     </label>
                     <div className="relative">
@@ -229,7 +229,7 @@ const AddContent: React.FC = () => {
                           })
                         }
                         rows={4}
-                        className="w-full px-3 py-2.5 border-0 bg-gray-50 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none transition-all duration-200 placeholder-gray-400 text-sm resize-none"
+                        className="w-full px-3 py-2.5 border-0 bg-gray-50 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-sm resize-none text-gray-900 dark:text-gray-100"
                         placeholder="详细描述课程内容和学习目标..."
                       />
                     </div>
@@ -239,7 +239,7 @@ const AddContent: React.FC = () => {
                 {/* 右侧 - 课程设置 */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                       课程等级
                     </label>
                     <div className="relative">
@@ -255,7 +255,7 @@ const AddContent: React.FC = () => {
                               | "advanced",
                           })
                         }
-                        className="w-full px-3 py-2.5 pr-8 border-0 bg-gray-50 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none transition-all duration-200 appearance-none text-sm"
+                        className="w-full px-3 py-2.5 pr-8 border-0 bg-gray-50 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all duration-200 appearance-none text-sm text-gray-900 dark:text-gray-100"
                       >
                         <option value="beginner">🌱 初级</option>
                         <option value="intermediate">🌿 中级</option>
@@ -278,7 +278,7 @@ const AddContent: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                       课时数量
                     </label>
                     <div className="relative">
@@ -294,7 +294,7 @@ const AddContent: React.FC = () => {
                             lessonCount: parseInt(e.target.value) || 5,
                           })
                         }
-                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none transition-all duration-200 text-sm"
+                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all duration-200 text-sm text-gray-900 dark:text-gray-100"
                       />
                       <svg
                         className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400"
@@ -328,7 +328,7 @@ const AddContent: React.FC = () => {
                             sentencesPerLesson: parseInt(e.target.value) || 10,
                           })
                         }
-                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white focus:outline-none transition-all duration-200 text-sm"
+                        className="w-full px-3 py-2.5 pl-9 border-0 bg-gray-50 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all duration-200 text-sm text-gray-900 dark:text-gray-100"
                       />
                       <svg
                         className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400"
@@ -347,29 +347,29 @@ const AddContent: React.FC = () => {
                   </div>
 
                   {/* 统计信息卡片 */}
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
-                    <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-blue-100 dark:border-blue-900/40">
+                    <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 uppercase tracking-wide">
                       生成预览
                     </h4>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-white/60 rounded-lg p-2">
-                        <div className="text-lg font-bold text-blue-600">
+                      <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-2">
+                        <div className="text-lg font-bold text-blue-600 dark:text-blue-300">
                           {generateConfig.lessonCount}
                         </div>
-                        <div className="text-xs text-gray-600">课时</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-300">课时</div>
                       </div>
-                      <div className="bg-white/60 rounded-lg p-2">
-                        <div className="text-lg font-bold text-purple-600">
+                      <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-2">
+                        <div className="text-lg font-bold text-purple-600 dark:text-purple-300">
                           {generateConfig.sentencesPerLesson}
                         </div>
-                        <div className="text-xs text-gray-600">句子/课时</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-300">句子/课时</div>
                       </div>
-                      <div className="bg-white/60 rounded-lg p-2">
-                        <div className="text-lg font-bold text-indigo-600">
+                      <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-2">
+                        <div className="text-lg font-bold text-indigo-600 dark:text-indigo-300">
                           {generateConfig.lessonCount *
                             generateConfig.sentencesPerLesson}
                         </div>
-                        <div className="text-xs text-gray-600">总句子</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-300">总句子</div>
                       </div>
                     </div>
                   </div>
@@ -478,32 +478,32 @@ const AddContent: React.FC = () => {
                   "{savedCourseInfo.title}"
                 </p>
 
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-4 mb-6">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900 rounded-xl p-4 mb-6">
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="bg-white/60 rounded-lg p-3">
-                      <div className="text-lg font-bold text-emerald-600">
+                    <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                      <div className="text-lg font-bold text-emerald-600 dark:text-emerald-300">
                         #{savedCourseInfo.id}
                       </div>
-                      <div className="text-xs text-gray-600">课程ID</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300">课程ID</div>
                     </div>
-                    <div className="bg-white/60 rounded-lg p-3">
-                      <div className="text-lg font-bold text-blue-600">
+                    <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-300">
                         {savedCourseInfo.lessonCount}
                       </div>
-                      <div className="text-xs text-gray-600">课时数</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300">课时数</div>
                     </div>
-                    <div className="bg-white/60 rounded-lg p-3">
-                      <div className="text-lg font-bold text-purple-600">
+                    <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3">
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-300">
                         {savedCourseInfo.totalSentences}
                       </div>
-                      <div className="text-xs text-gray-600">句子数</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300">句子数</div>
                     </div>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setShowSuccessModal(false)}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   开始学习
                 </button>

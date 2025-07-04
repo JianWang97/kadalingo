@@ -1084,9 +1084,9 @@ export const Settings: React.FC<SettingsProps> = ({
   };
   return (
     <>
-      <div className={`flex flex-col md:flex-row h-full bg-white overflow-hidden ${className}`}>
+      <div className={`flex flex-col md:flex-row h-full bg-white dark:bg-gray-900 overflow-hidden ${className}`}>
         {/* 左侧标签页 - 在移动端变为顶部标签栏 */}
-        <div className="w-full md:w-48 bg-gray-50 border-gray-200 flex flex-col overflow-hidden">
+        <div className="w-full md:w-48 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
           <nav className="flex md:flex-col p-2 space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto md:overflow-y-auto">
             {tabs.map((tab) => (
               <button
@@ -1094,8 +1094,8 @@ export const Settings: React.FC<SettingsProps> = ({
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
                   ${activeTab === tab.id
-                    ? "bg-purple-100 text-purple-700"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                   }`}
               >
                 <span className="text-base">{tab.icon}</span>
@@ -1108,7 +1108,7 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* 右侧内容区域 */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto text-gray-900 dark:text-gray-200">
               {renderTabContent()}
             </div>
           </div>

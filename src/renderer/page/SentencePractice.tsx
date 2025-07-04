@@ -726,9 +726,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
   // 没有句子数据时显示
   if (sentences.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50">
+      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="text-gray-600">
+          <div className="text-gray-600 dark:text-gray-300">
             {selectedCourse
               ? `课程"${selectedCourse.name}"暂无练习句子`
               : "暂无练习句子"}
@@ -797,8 +797,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
   return (
     <div
-      className={`relative h-full flex flex-col ${
-        isFloating ? "floating-mode-content" : "bg-gray-50"
+      className={`relative min-h-[calc(100vh-3rem)] flex flex-col ${
+        isFloating
+          ? "floating-mode-content"
+          : "bg-gray-50 dark:bg-gray-900 bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900"
       }`}
     >
       {/* 小窗模式下的拖动区域 */}
@@ -845,10 +847,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               <div
                 className={`inline-flex items-center gap-2 ${
                   isFloating ? "px-2 py-1" : "px-3 py-1.5"
-                } bg-gray-100 rounded-md`}
+                } bg-gray-100 dark:bg-gray-800 rounded-md`}
               >
                 <span
-                  className={`text-gray-600 ${
+                  className={`text-gray-600 dark:text-gray-200 ${
                     isFloating ? "text-xs" : "text-sm"
                   }`}
                 >
@@ -856,9 +858,9 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 </span>
                 {currentLesson && (
                   <>
-                    <span className="text-gray-400">·</span>
+                    <span className="text-gray-400 dark:text-gray-500">·</span>
                     <span
-                      className={`text-gray-500 ${
+                      className={`text-gray-500 dark:text-gray-300 ${
                         isFloating ? "text-xs" : "text-sm"
                       }`}
                     >
@@ -866,7 +868,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                     </span>
                     {allLessons.length > 1 && (
                       <span
-                        className={`text-gray-400 ${
+                        className={`text-gray-400 dark:text-gray-500 ${
                           isFloating ? "text-xs" : "text-xs"
                         }`}
                       >
@@ -935,7 +937,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 <p
                   className={`${
                     isFloating ? "text-base" : "text-xl"
-                  } text-gray-900 ${
+                  } text-gray-900 dark:text-gray-100 ${
                     isFloating ? "floating-mode-text drag-region" : ""
                   }`}
                 >
@@ -949,7 +951,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   }`}
                 >
                   {/* 难度显示已替换为音标 */}
-                  <span className="text-gray-400 font-semibold">
+                  <span className="text-gray-400 dark:text-gray-500 font-semibold">
                     {currentSentence.phonetic || "无音标"}
                   </span>
                 </div>
@@ -999,7 +1001,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                             ? "border-b-red-400 text-red-700"
                             : wordResults[idx] === true
                             ? "border-b-green-400 text-green-700"
-                            : "border-b-gray-300 focus:border-b-purple-500 text-gray-800"
+                            : "border-b-gray-300 dark:border-b-gray-700 focus:border-b-purple-500 text-gray-800 dark:text-gray-100"
                         }`}
                         style={{
                           width: `${Math.max(
@@ -1016,7 +1018,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                         <span
                           className={`${
                             isFloating ? "text-xl" : "text-3xl"
-                          } text-gray-700 ml-1 font-bold`}
+                          } text-gray-700 dark:text-gray-200 ml-1 font-bold`}
                           style={{
                             fontFamily:
                               '"Microsoft YaHei", "微软雅黑", sans-serif',
@@ -1043,10 +1045,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                       isFloating ? "text-sm" : "text-base"
                     } font-medium px-4 py-2 rounded-lg shadow-lg border whitespace-nowrap ${
                       isCorrect === true
-                        ? "text-green-700 bg-green-50 border-green-200"
+                        ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700"
                         : isCorrect === false
-                        ? "text-red-700 bg-red-50 border-red-200"
-                        : "text-purple-700 bg-purple-50 border-purple-200"
+                        ? "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700"
+                        : "text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900 border-purple-200 dark:border-purple-700"
                     }`}
                     style={{
                       fontFamily:
@@ -1074,16 +1076,16 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       </div>{" "}
       {/* 进度条区域 - 小飘窗模式下隐藏 */}
       {!isFloating && (
-        <div className="w-full bg-gray-50 px-6 py-3">
+        <div className="w-full bg-gray-50 dark:bg-gray-900 px-6 py-3">
           <div className="flex items-center justify-center max-w-2xl mx-auto">
-            {/* 进度条 */}{" "}
+            {/* 进度条 */}
             <div className="flex-1 text-center">
-              <div className="text-sm text-gray-400 mb-2">
+              <div className="text-sm text-gray-400 dark:text-gray-500 mb-2">
                 {completedSentencesCount} / {sentences.length}
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full">
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full">
                 <div
-                  className="h-2 bg-gray-400 rounded-full transition-all duration-300"
+                  className="h-2 bg-gray-400 dark:bg-purple-600 rounded-full transition-all duration-300"
                   style={{
                     width: `${
                       sentences.length > 0
@@ -1100,7 +1102,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
       {/* 底部操作栏 - 适配移动端 */}
       {!isFloating && (
         <div className={`
-          flex w-full bg-white border-t border-gray-200 px-4 py-3
+          flex w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-3
           md:px-6 md:py-4
           ${isMobile ? "pb-20" : ""} // 在移动端添加底部间距
         `}>
@@ -1115,10 +1117,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 disabled={isPlaying}
                 className={`
                   px-3 py-1.5 md:px-4 md:py-2
-                  bg-white text-gray-700 text-sm rounded-lg
-                  hover:bg-gray-50 disabled:opacity-50 transition-colors
+                  bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm rounded-lg
+                  hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors
                   flex items-center gap-1 md:gap-2
-                  border border-gray-200 no-drag
+                  border border-gray-200 dark:border-gray-700 no-drag
                   ${isMobile ? "flex-1" : ""}
                 `}
               >
@@ -1127,7 +1129,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                 </svg>
                 <span>播放</span>
                 {!isMobile && (
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                  <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 dark:text-gray-300">
                     Ctrl+P
                   </span>
                 )}
@@ -1139,16 +1141,16 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                   onClick={() => showCorrectAnswer().catch(console.error)}
                   className={`
                     px-3 py-1.5 md:px-4 md:py-2
-                    bg-white text-gray-700 text-sm rounded-lg
-                    hover:bg-gray-50 transition-colors
+                    bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm rounded-lg
+                    hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors
                     flex items-center gap-1 md:gap-2
-                    border border-gray-200 no-drag
+                    border border-gray-200 dark:border-gray-700 no-drag
                     ${isMobile ? "flex-1" : ""}
                   `}
                 >
                   <span>显示答案</span>
                   {!isMobile && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                    <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 dark:text-gray-300">
                       Ctrl+H
                     </span>
                   )}
@@ -1180,10 +1182,10 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
               {!isMobile && window.electronAPI?.toggleFloatingMode && (
                 <button
                   onClick={() => window.electronAPI?.toggleFloatingMode?.()}
-                  className="px-4 py-2 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 border border-gray-200 no-drag"
+                  className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 border border-gray-200 dark:border-gray-700 no-drag"
                 >
                   <span>切换窗口化</span>
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                  <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 dark:text-gray-300">
                     Ctrl+Shift+P
                   </span>
                 </button>

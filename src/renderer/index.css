@@ -347,6 +347,22 @@ button:focus {
   backdrop-filter: blur(10px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* 深色模式下 AI 菜单项样式 */
+.dark .sidebar-item-ai {
+  color: var(--color-on-surface);
+  background: transparent;
+  border: 1px solid transparent;
+}
+.dark .sidebar-item-ai:hover {
+  background: linear-gradient(135deg, var(--color-primary-container-dark)/30, var(--color-secondary-container-dark)/20);
+  color: var(--color-primary-dark);
+  animation: ai-pulse 2s ease-in-out infinite;
+}
+.dark .sidebar-item-active-ai {
+  background: linear-gradient(135deg, var(--color-primary-container-dark), var(--color-secondary-container-dark)/60);
+  color: var(--color-on-primary-container-dark);
+  animation: ai-glow 3s ease-in-out infinite;
+}
 
 .time-display:hover {
   transform: scale(1.05);

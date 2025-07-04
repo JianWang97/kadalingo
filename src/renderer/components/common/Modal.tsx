@@ -48,27 +48,27 @@ const Modal: React.FC<ModalProps> = ({
 
       {/* 模态框内容 */}
       <div
-        className={`relative bg-white rounded-xl shadow-2xl ${maxWidth} w-full ${maxHeight} flex flex-col transform transition-all duration-200 scale-100 no-drag`}
+        className={`relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl ${maxWidth} w-full ${maxHeight} flex flex-col transform transition-all duration-200 scale-100 no-drag`}
       >        {/* 头部 */}
-        <div className="flex items-center justify-between px-6 py-2 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200 no-drag"
-            aria-label="关闭"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>{" "}
-        </div>
-        {/* 内容区域 */}
-        <div className="p-6 overflow-y-auto flex-1 min-h-0">{children}</div>
+      <div className="flex items-center justify-between px-6 py-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        <button
+          onClick={onClose}
+          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 no-drag"
+          aria-label="关闭"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>{" "}
       </div>
+      {/* 内容区域 */}
+      <div className="p-6 overflow-y-auto flex-1 min-h-0 text-gray-900 dark:text-gray-200">{children}</div>
+    </div>
     </div>
   );
 };

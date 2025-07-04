@@ -243,31 +243,31 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
     );
   }
   return (
-    <div className="h-full bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="min-h-[calc(100vh-3rem)] bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+      <div className="max-w-7xl mx-auto p-6 pb-16">
         {/* 现代化标题区域 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             课程中心
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             发现适合您的语言学习课程，从基础到进阶，开启您的学习之旅
           </p>
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-white/50">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="mt-4 inline-flex items-center px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-sm border border-white/50 dark:border-gray-700/50">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
               共 {courses.length} 个课程可选
             </span>
           </div>
-        </div>{" "}
+        </div>
         {/* 卡片网格布局 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
             <div
               key={course.id}
-              className="group bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
+              className="group bg-white/70 dark:bg-gray-900/80 backdrop-blur-sm border border-white/50 dark:border-gray-700/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
             >
               {/* 卡片头部 */}
-              <div className="relative p-6 bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur">
+              <div className="relative p-6 bg-gradient-to-br from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur">
                 {/* 完成状态徽章 */}
                 {course.completed && (
                   <div className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg">
@@ -287,15 +287,15 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                   </div>
                 )}
                 {/* 课程图标 */}
-                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-100 rounded-2xl mb-4 shadow-inner">
+                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-100 dark:from-purple-900 dark:to-purple-900 rounded-2xl mb-4 shadow-inner">
                   <span className="text-3xl">
-                    {<course.icon className="w-8 h-8 text-purple-400" />}
+                    {<course.icon className="w-8 h-8 text-purple-400 dark:text-purple-300" />}
                   </span>
-                </div>{" "}
+                </div>
                 {/* 课程标题 - 单行显示，支持悬停显示全部 */}
                 <div className="relative mb-2">
                   <h3
-                    className="text-xl font-bold text-gray-900 hover:text-purple-600 transition-colors truncate cursor-help peer"
+                    className="text-xl font-bold text-gray-900 dark:text-gray-100 hover:text-purple-600 dark:hover:text-purple-400 transition-colors truncate cursor-help peer"
                     title={course.title}
                   >
                     {course.title}
@@ -310,7 +310,7 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                 </div>
                 {/* 课程描述 - 固定三行高度 */}
                 <div className="mb-4" style={{ height: "3.6rem" }}>
-                  <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed h-full">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 leading-relaxed h-full">
                     {course.description || "暂无课程描述"}
                   </p>
                 </div>
@@ -319,11 +319,11 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                   <span
                     className={`px-3 py-1.5 text-xs font-medium rounded-full border ${getLevelColor(
                       course.level
-                    )}`}
+                    )} dark:border-opacity-60`}
                   >
                     {getLevelText(course.level)}
                   </span>
-                  <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-full border border-gray-200">
+                  <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full border border-gray-200 dark:border-gray-700">
                     {course.lessonCount} 课时
                   </span>
                 </div>
@@ -331,23 +331,23 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
 
               {/* 进度条区域 - 固定高度，避免影响按钮对齐 */}
               <div
-                className="px-6 pb-4 bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur"
+                className="px-6 pb-4 bg-gradient-to-br from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 backdrop-blur"
                 style={{ minHeight: "60px" }}
               >
                 {course.progress > 0 ? (
                   <div className="h-full flex flex-col justify-center">
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300 mb-2">
                       <span className="font-medium">学习进度</span>
-                      <span className="font-bold text-purple-600">
+                      <span className="font-bold text-purple-600 dark:text-purple-300">
                         {course.progress}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           course.completed
-                            ? "bg-gradient-to-r from-blue-400 to-blue-500"
-                            : "bg-gradient-to-r from-purple-400 to-purple-500"
+                            ? "bg-gradient-to-r from-blue-400 to-blue-500 dark:from-blue-400 dark:to-blue-600"
+                            : "bg-gradient-to-r from-purple-400 to-purple-500 dark:from-purple-400 dark:to-purple-600"
                         }`}
                         style={{ width: `${course.progress}%` }}
                       />
@@ -355,17 +355,17 @@ const Courses: React.FC<CoursesProps> = ({ onStartCourse }) => {
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">
-                    <span className="text-gray-400 text-sm">尚未开始学习</span>
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">尚未开始学习</span>
                   </div>
                 )}
               </div>
 
               {/* 卡片底部操作区 - 固定位置 */}
-              <div className="p-6 bg-white/50 backdrop-blur border-t border-gray-200/50">
+              <div className="p-6 bg-white/50 dark:bg-gray-900/60 backdrop-blur border-t border-gray-200/50 dark:border-gray-700/50">
                 <div className="flex items-center gap-3">
                   {/* 课时详情按钮 */}
                   <button
-                    className="flex items-center justify-center w-10 h-10 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
+                    className="flex items-center justify-center w-10 h-10 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       showLessonDetails(course);
