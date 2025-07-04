@@ -14,7 +14,17 @@ export default defineConfig({
     },
     outDir: 'dist',
     emptyOutDir: false,
-    minify: false, // 关闭压缩以便调试
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        dead_code: true,
+      },
+      mangle: {
+        toplevel: true,
+      },
+    },
   },
   resolve: {
     alias: {

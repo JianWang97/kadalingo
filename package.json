@@ -74,20 +74,18 @@
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
     "terser": "^5.36.0",
-    "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.19",
     "vitest": "^1.6.0",
     "@vitest/ui": "^1.6.0",
-    "@vitest/coverage-v8": "^1.6.0",
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "rollup-plugin-visualizer": "^5.12.1"
   },
   "dependencies": {
     "dexie": "^4.0.11",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-icons": "^5.3.0",
-    "scheduler": "^0.26.0"
+    "react-icons": "^5.3.0"
   },
   "build": {
     "appId": "com.kadalingo.app",
@@ -114,15 +112,13 @@
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         },
         {
           "target": "portable",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         }
       ],
@@ -134,15 +130,13 @@
         {
           "target": "dmg",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         },
         {
           "target": "zip",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         }
       ],
@@ -206,6 +200,7 @@
       "provider": "github",
       "owner": "JianWang97",
       "repo": "kadalingo"
-    }
+    },
+    "afterPack": "./scripts/afterPack.js"
   }
 }
