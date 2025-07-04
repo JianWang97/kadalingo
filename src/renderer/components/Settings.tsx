@@ -1132,7 +1132,7 @@ export const Settings: React.FC<SettingsProps> = ({
               {/* 配置名称 */}
               <div className="group">
                 {" "}
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-purple-200 mb-1.5">
                   <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
                   配置名称
                   <span className="text-red-500 text-xs">*</span>
@@ -1147,9 +1147,9 @@ export const Settings: React.FC<SettingsProps> = ({
                         name: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
-                             transition-all duration-200 group-hover:border-gray-300"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm
+                                                 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500
+                                                 transition-all duration-200 group-hover:border-gray-300 dark:focus:bg-gray-900 dark:placeholder-gray-400"
                     placeholder="例如：OpenAI GPT-3.5"
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -1173,7 +1173,7 @@ export const Settings: React.FC<SettingsProps> = ({
               {/* Base URL */}
               <div className="group">
                 {" "}
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-purple-200 mb-1.5">
                   <div className="w-1 h-4 bg-green-500 rounded-full"></div>
                   Base URL
                   <span className="text-red-500 text-xs">*</span>
@@ -1188,9 +1188,9 @@ export const Settings: React.FC<SettingsProps> = ({
                         baseUrl: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
-                             transition-all duration-200 group-hover:border-gray-300"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm
+                                                 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500
+                                                 transition-all duration-200 group-hover:border-gray-300 dark:focus:bg-gray-900 dark:placeholder-gray-400"
                     placeholder="https://api.openai.com/v1"
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -1214,7 +1214,7 @@ export const Settings: React.FC<SettingsProps> = ({
               {/* API Key */}
               <div className="group">
                 {" "}
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-purple-200 mb-1.5">
                   <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
                   API Key
                   <span className="text-red-500 text-xs">*</span>
@@ -1229,9 +1229,9 @@ export const Settings: React.FC<SettingsProps> = ({
                         apiKey: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
-                             transition-all duration-200 group-hover:border-gray-300"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm
+                                                 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500
+                                                 transition-all duration-200 group-hover:border-gray-300 dark:focus:bg-gray-900 dark:placeholder-gray-400"
                     placeholder="sk-..."
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
@@ -1261,7 +1261,7 @@ export const Settings: React.FC<SettingsProps> = ({
               {/* 模型 */}
               <div className="group">
                 {" "}
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-purple-200 mb-1.5">
                   <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
                   模型名称
                   <span className="text-gray-400 text-xs ml-auto">可选</span>
@@ -1276,9 +1276,9 @@ export const Settings: React.FC<SettingsProps> = ({
                         model: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm 
-                             focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 
-                             transition-all duration-200 group-hover:border-gray-300"
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm
+                                                 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500
+                                                 transition-all duration-200 group-hover:border-gray-300 dark:focus:bg-gray-900 dark:placeholder-gray-400"
                     placeholder="gpt-3.5-turbo"
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">

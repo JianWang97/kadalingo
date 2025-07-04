@@ -51,7 +51,7 @@ const Modal: React.FC<ModalProps> = ({
         className={`relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl ${maxWidth} w-full ${maxHeight} flex flex-col transform transition-all duration-200 scale-100 no-drag`}
       >        {/* 头部 */}
       <div className="flex items-center justify-between px-6 py-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+        <h2 className="text-sm font-bold text-gray-900 dark:text-purple-200">{title}</h2>
         <button
           onClick={onClose}
           className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 no-drag"
