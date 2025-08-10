@@ -596,7 +596,8 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
     // 只有当单词不包含单引号时，才添加到生词本
     const englishQuoteWord = originalWord
-        .replace(/[‘’“”]/g, (match) => (match === "‘" || match === "’" ? "'" : '"'));
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"');
     vocabularyService.addToNewWords(englishQuoteWord);
     
     
@@ -959,14 +960,14 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
             {/* 输入框区域 */}
             <div className={`mb-8 ${isFloating ? "drag-region" : ""} relative`}>
               <div
-                className={`flex flex-wrap gap-2 justify-center items-baseline w-full ${
+                className={`flex flex-wrap gap-2 justify-center items-end w-full ${
                   isFloating ? "drag-region" : ""
                 }`}
               >
                 {" "}
                 {parseWordsAndPunctuation(currentSentence.english).map(
                   (token, idx) => (
-                    <div key={idx} className="relative flex items-baseline">
+                    <div key={idx} className="relative flex items-end">
                       {" "}
                       {/* 提示显示区域 - 使用绝对定位不占用布局空间 */}
                       {showHints[idx] && (
@@ -992,7 +993,7 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
                         data-word-index={idx}
                         className={`px-2 py-1 text-center ${
                           isFloating ? "text-lg" : "text-2xl"
-                        } font-bold bg-transparent border-0 border-b-2 focus:outline-none transition-colors no-drag ${
+                        } leading-none font-bold bg-transparent border-0 border-b-2 focus:outline-none transition-colors no-drag ${
                           isFloating ? "floating-mode-text" : ""
                         } ${shakingInputs[idx] ? "shake-animation" : ""}
                         ${
@@ -1199,10 +1200,11 @@ const SentencePractice: React.FC<SentencePracticeProps> = ({
 
 export default SentencePractice;
 
-// 辅助函数：去除单双引号
+// 辅助函数：规范化输入（统一智能引号，去除首尾空格并小写化）
 const normalizeWord = (word: string) => {
   return word
-    .replace(/[‘’"”'"\u2018\u2019\u201C\u201D]/g, "")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
     .trim()
     .toLowerCase();
 };
