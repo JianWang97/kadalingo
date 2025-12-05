@@ -10,6 +10,7 @@ import { SpeechProvider } from "./contexts/SpeechContext";
 import { FloatingModeProvider } from "./contexts/FloatingModeContext";
 import { KeyboardSoundProvider } from "./contexts/KeyboardSoundContext";
 import { LLMProvider } from "./contexts/LLMContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { useEffect, useState as useReactState } from "react";
 
 // 移植 Sidebar 的 useIsMobile
@@ -58,17 +59,18 @@ function App() {
     }
   };
   return (
-    <FloatingModeProvider>
-      <SpeechProvider>
-        <KeyboardSoundProvider>
-          <LLMProvider>
-            <div
-              className={`h-screen flex flex-col overflow-hidden ${
-                isFloating
-                  ? "floating-mode-background"
-                  : "bg-gradient-to-br from-blue-50 to-indigo-100"
-              }`}
-            >              {/* 自定义顶部工具栏 - 固定在顶部 */}
+    <ThemeProvider>
+      <FloatingModeProvider>
+        <SpeechProvider>
+          <KeyboardSoundProvider>
+            <LLMProvider>
+              <div
+                className={`h-screen flex flex-col overflow-hidden ${
+                  isFloating
+                    ? "floating-mode-background"
+                    : "bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 dark:text-white"
+                }`}
+              >              {/* 自定义顶部工具栏 - 固定在顶部 */}
               <div
                 className={
                   isFloating || isMobile
@@ -127,6 +129,7 @@ function App() {
         </KeyboardSoundProvider>
       </SpeechProvider>
     </FloatingModeProvider>
+    </ThemeProvider>
   );
 }
 

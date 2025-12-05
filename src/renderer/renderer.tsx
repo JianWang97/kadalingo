@@ -3,24 +3,7 @@
  * 并监听 storage 事件，确保多标签页同步
  */
 (function () {
-  try {
-    const applyTheme = () => {
-      const theme = localStorage.getItem("theme");
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else if (theme === "light") {
-        document.documentElement.classList.remove("dark");
-      } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-    applyTheme();
-    window.addEventListener("storage", applyTheme);
-  } catch (e) {
-    // ignore
-  }
+  // Theme initialization is now handled by ThemeContext
 })();
 /**
  * This file will automatically be loaded by vite and run in the "renderer" context.

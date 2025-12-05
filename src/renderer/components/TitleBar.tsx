@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useFloatingMode } from "../hooks/useFloatingMode";
 import { isElectron, isWindows, getDesktopDownloadUrl } from "../utils/environment";
+import { useTheme } from "../contexts/ThemeContext";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
 
 interface TitleBarProps {
   title?: string;
@@ -10,6 +12,7 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
   const isFloating = useFloatingMode();
   const inElectron = isElectron();
   const [starCount, setStarCount] = useState<number | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
 
   useEffect(() => {
@@ -105,6 +108,13 @@ const TitleBar: React.FC<TitleBarProps> = ({ title = "Kada Lingo" }) => {
       {/* 右侧：窗口控制按钮 - 只在 Electron 环境中显示 */}
       {/* 暗黑模式切换按钮 */}
       <div className="flex items-center gap-2 no-drag relative z-10">
+        <button
+          onClick={toggleTheme}
+          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300"
+          title={theme === 'light' ? "切换到暗黑模式" : "切换到明亮模式"}
+        >
+          {theme === 'light' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
+        </button>
         {inElectron && (
           <>
             <button

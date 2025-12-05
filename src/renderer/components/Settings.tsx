@@ -16,6 +16,7 @@ import React, { useState } from "react";
 import { useSpeech } from "../contexts/SpeechContext";
 import { useFloatingModeSettings } from "../contexts/FloatingModeContext";
 import { useKeyboardSound } from "../contexts/KeyboardSoundContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { useLLM, type LLMSettings } from "../contexts/LLMContext";
 import { Modal, Toast } from "./common";
 import { getAppVersion, isElectron, isWindows } from "../utils/environment";
@@ -41,6 +42,8 @@ export const Settings: React.FC<SettingsProps> = ({
     updateSettings: updateKeyboardSettings,
     isSupported: isKeyboardSoundSupported,
   } = useKeyboardSound();
+
+  const { theme, toggleTheme } = useTheme();
 
   // LLM 相关状态和方法
   const llmContext = useLLM();
@@ -751,16 +754,36 @@ export const Settings: React.FC<SettingsProps> = ({
         
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">界面设置</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">界面设置</h3>
+
+            {/* 主题设置 */}
+            <div className="space-y-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">外观主题</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">切换明亮/暗黑模式</p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  {theme === 'dark' ? '暗黑模式' : '明亮模式'}
+                </button>
+              </div>
+            </div>
 
             {/* 浮窗透明度设置 */}
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">浮窗透明度</span>
-                  <p className="text-xs text-gray-500 mt-1">调整悬浮窗口的透明度</p>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">浮窗透明度</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">调整悬浮窗口的透明度</p>
                 </div>
-                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                   {Math.round(floatingSettings.opacity * 100)}%
                 </span>
               </div>
@@ -774,7 +797,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   onChange={(e) =>
                     updateFloatingSettings({ opacity: Number(e.target.value) })
                   }
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                     [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                     [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
@@ -788,11 +811,11 @@ export const Settings: React.FC<SettingsProps> = ({
             </div>
 
             {/* 窗口控制 */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
+            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">窗口控制</span>
-                  <p className="text-xs text-gray-500 mt-1">窗口控制选项</p>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">窗口控制</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">窗口控制选项</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
