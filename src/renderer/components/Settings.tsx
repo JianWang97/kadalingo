@@ -572,13 +572,13 @@ export const Settings: React.FC<SettingsProps> = ({
       case "speech":
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">语音设置</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">语音设置</h3>
             <div className="space-y-6">
               {/* 启用/禁用语音 */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">启用语音</span>
-                  <p className="text-xs text-gray-500 mt-1">开启或关闭语音功能</p>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">启用语音</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">开启或关闭语音功能</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -589,7 +589,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   />
                   <div
                     className={`w-11 h-6 rounded-full transition-colors ${
-                      settings.enabled ? "bg-purple-600" : "bg-gray-200"
+                      settings.enabled ? "bg-purple-600" : "bg-gray-200 dark:bg-gray-700"
                     }`}
                   >
                     <div
@@ -604,8 +604,8 @@ export const Settings: React.FC<SettingsProps> = ({
               {/* 自动播放设置 */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">自动播放英文</span>
-                  <p className="text-xs text-gray-500 mt-1">显示新句子时自动播放语音</p>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">自动播放英文</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">显示新句子时自动播放语音</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -619,7 +619,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     className={`w-11 h-6 rounded-full transition-colors ${
                       settings.autoPlay && settings.enabled
                         ? "bg-purple-600"
-                        : "bg-gray-200"
+                        : "bg-gray-200 dark:bg-gray-700"
                     } ${!settings.enabled ? "opacity-50" : ""}`}
                   >
                     <div
@@ -637,10 +637,10 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">语音速度</span>
-                    <p className="text-xs text-gray-500 mt-1">调整语音播放的速度</p>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">语音速度</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">调整语音播放的速度</p>
                   </div>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                     {settings.rate.toFixed(1)}x
                   </span>
                 </div>
@@ -653,13 +653,13 @@ export const Settings: React.FC<SettingsProps> = ({
                     value={settings.rate}
                     onChange={(e) => updateSettings({ rate: Number(e.target.value) })}
                     disabled={!settings.enabled}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                       [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
                       [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                   />
-                  <div className="flex justify-between text-xs text-gray-400">
+                  <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
                     <span>慢 (0.5x)</span>
                     <span>快 (2.0x)</span>
                   </div>
@@ -670,10 +670,10 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">音量</span>
-                    <p className="text-xs text-gray-500 mt-1">调整语音播放的音量</p>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">音量</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">调整语音播放的音量</p>
                   </div>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                     {Math.round(settings.volume * 100)}%
                   </span>
                 </div>
@@ -686,13 +686,13 @@ export const Settings: React.FC<SettingsProps> = ({
                     value={settings.volume}
                     onChange={(e) => updateSettings({ volume: Number(e.target.value) })}
                     disabled={!settings.enabled}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                       [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
                       [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                   />
-                  <div className="flex justify-between text-xs text-gray-400">
+                  <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
                     <span>静音 (0%)</span>
                     <span>最大 (100%)</span>
                   </div>
@@ -845,15 +845,15 @@ export const Settings: React.FC<SettingsProps> = ({
       case "keyboard":
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">键盘声音</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">键盘声音</h3>
 
             {isKeyboardSoundSupported ? (
               <div className="space-y-6">
                 {/* 启用/禁用键盘声音 */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">启用按键声音</span>
-                    <p className="text-xs text-gray-500 mt-1">输入时播放按键音效</p>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">启用按键声音</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">输入时播放按键音效</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -866,7 +866,9 @@ export const Settings: React.FC<SettingsProps> = ({
                     />
                     <div
                       className={`w-11 h-6 rounded-full transition-colors ${
-                        keyboardSettings.enabled ? "bg-purple-600" : "bg-gray-200"
+                        keyboardSettings.enabled
+                          ? "bg-purple-600"
+                          : "bg-gray-200 dark:bg-gray-700"
                       }`}
                     >
                       <div
@@ -882,8 +884,8 @@ export const Settings: React.FC<SettingsProps> = ({
                 <div className="space-y-4">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <span className="text-sm font-medium text-gray-700">声音类型</span>
-                      <p className="text-xs text-gray-500 mt-1">选择不同的按键音效</p>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">声音类型</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">选择不同的按键音效</p>
                     </div>
                     <select
                       value={keyboardSettings.soundType}
@@ -893,7 +895,7 @@ export const Settings: React.FC<SettingsProps> = ({
                         })
                       }
                       disabled={!keyboardSettings.enabled}
-                      className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50 disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
+                      className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:bg-gray-50 dark:disabled:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
                     >
                       <option value="mechanical">机械键盘</option>
                       <option value="soft">柔和声音</option>
@@ -906,10 +908,10 @@ export const Settings: React.FC<SettingsProps> = ({
                 <div className="space-y-4">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <span className="text-sm font-medium text-gray-700">按键音量</span>
-                      <p className="text-xs text-gray-500 mt-1">调整按键音效的音量</p>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">按键音量</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">调整按键音效的音量</p>
                     </div>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                       {Math.round(keyboardSettings.volume * 100)}%
                     </span>
                   </div>
@@ -926,13 +928,13 @@ export const Settings: React.FC<SettingsProps> = ({
                         })
                       }
                       disabled={!keyboardSettings.enabled}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed
                         [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 
                         [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:cursor-pointer
                         [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:rounded-full 
                         [&::-moz-range-thumb]:bg-purple-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
                     />
-                    <div className="flex justify-between text-xs text-gray-400">
+                    <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500">
                       <span>静音 (0%)</span>
                       <span>最大 (100%)</span>
                     </div>
@@ -946,8 +948,8 @@ export const Settings: React.FC<SettingsProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
-                <h4 className="text-sm font-medium text-gray-700 mb-1">当前平台不支持键盘声音</h4>
-                <p className="text-xs text-gray-500">请在桌面端使用此功能</p>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">当前平台不支持键盘声音</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">请在桌面端使用此功能</p>
               </div>
             )}
           </div>
@@ -956,15 +958,15 @@ export const Settings: React.FC<SettingsProps> = ({
       case "general":
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
               通用设置
             </h3>
 
             {/* 导入导出设置 */}
             <div className="space-y-4">
               <div>
-                <span className="text-sm font-medium text-gray-700">数据导入/导出</span>
-                <p className="text-xs text-gray-500 mt-1">导出或导入所有应用数据（包括所有 IndexDB 数据）</p>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">数据导入/导出</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">导出或导入所有应用数据（包括所有 IndexDB 数据）</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -1026,12 +1028,12 @@ export const Settings: React.FC<SettingsProps> = ({
                       setIsExporting(false);
                     }
                   }}
-                  className={`px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 ${isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`px-4 py-2 text-sm text-purple-600 dark:text-purple-200 hover:text-purple-700 dark:hover:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors border border-purple-200 dark:border-purple-700 ${isExporting ? 'opacity-60 cursor-not-allowed' : ''}`}
                   disabled={isExporting}
                 >
                   {isExporting ? '导出中…' : '导出数据'}
                 </button>
-                <label className={`px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 cursor-pointer ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <label className={`px-4 py-2 text-sm text-purple-600 dark:text-purple-200 hover:text-purple-700 dark:hover:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors border border-purple-200 dark:border-purple-700 cursor-pointer ${isImporting ? 'opacity-60 cursor-not-allowed' : ''}`}>
                   {isImporting ? '导入中…' : '导入数据'}
                   <input
                     type="file"
@@ -1052,10 +1054,10 @@ export const Settings: React.FC<SettingsProps> = ({
             {/* 重置设置 */}
             <div className="space-y-4">
               <div>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   重置设置
                 </span>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   将所有设置恢复为默认值
                 </p>
               </div>
@@ -1076,21 +1078,21 @@ export const Settings: React.FC<SettingsProps> = ({
                     soundType: "mechanical",
                   });
                 }}
-                className="w-full px-4 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200"
+                className="w-full px-4 py-2 text-sm text-purple-600 dark:text-purple-200 hover:text-purple-700 dark:hover:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors border border-purple-200 dark:border-purple-700"
               >
                 重置为默认设置
               </button>
             </div>
 
             {/* 应用信息 */}
-            <div className="pt-4 border-t border-gray-100">
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
               <div className="space-y-2">
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     应用信息
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <p>版本: {getAppVersion()}</p>
                 </div>
               </div>
