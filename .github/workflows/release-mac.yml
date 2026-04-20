@@ -1,0 +1,284 @@
+name: Release Mac
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: '版本号 (例如: v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+        type: string
+
+jobs:
+  release-mac:
+    runs-on: macos-latest  # 使用 macOS 环境构建 dmg 和 zip 文件
+    environment: cloudfare
+    permissions:
+      contents: write  # 需要写权限来创建 release
+      actions: read    # 读取actions权限
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整的 git 历史记录
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Check package.json version
+        id: check_version
+        shell: bash
+        run: |
+          # 读取 package.json 中的版本号
+          currentVersion=$(node -p "require('./package.json').version")
+          tagName="v$currentVersion"
+
+          echo "Current package.json version: $currentVersion"
+          echo "Tag name: $tagName"
+
+          # 检查该版本的 tag 是否已经存在
+          tagExists=false
+          echo "Checking if tag $tagName exists..."
+
+          # 使用 git tag -l 来检查标签是否存在
+          if git tag -l "$tagName" | grep -q "^${tagName}$"; then
+            tagExists=true
+            echo "Tag $tagName exists"
+          else
+            echo "Tag $tagName does not exist"
+          fi
+
+          # 输出调试信息
+          echo "Tag exists: $tagExists"
+          echo "All existing tags:"
+          git tag -l "v*" | sort -V | tail -5
+
+          # 如果是手动触发，则允许继续
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "Manual trigger - proceeding with release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          elif [ "$tagExists" == "true" ]; then
+            echo "Tag $tagName already exists - skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version detected - proceeding with release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "current_version=$currentVersion" >> $GITHUB_OUTPUT
+          echo "tag_name=$tagName" >> $GITHUB_OUTPUT
+          echo "tag_exists=$tagExists" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npm ci
+
+      - name: Build application
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List build output (debug)
+        if: steps.check_version.outputs.should_release == 'true'
+        run: ls -lh build/
+
+      - name: Extract version from tag or input
+        if: steps.check_version.outputs.should_release == 'true'
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+            version="${version#v}"  # 移除开头的 'v'
+            tag_name="${{ github.event.inputs.version }}"
+            echo "version=$version" >> $GITHUB_OUTPUT
+            echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+            echo "Manual trigger with version: $tag_name"
+          else
+            # 使用从 package.json 读取的版本
+            version="${{ steps.check_version.outputs.current_version }}"
+            tag_name="${{ steps.check_version.outputs.tag_name }}"
+            echo "version=$version" >> $GITHUB_OUTPUT
+            echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+            echo "Package.json version: $tag_name"
+          fi
+
+      - name: Create tag for manual trigger
+        if: github.event_name == 'workflow_dispatch' && steps.check_version.outputs.should_release == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag ${{ steps.get_version.outputs.tag_name }}
+          git push origin ${{ steps.get_version.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tag for package version update
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check_version.outputs.should_release == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag ${{ steps.check_version.outputs.tag_name }}
+          git push origin ${{ steps.get_version.outputs.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag_name }}
+          name: 咔哒 ${{ steps.get_version.outputs.tag_name }} - 英语学习句子练习工具 (macOS)
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          body: |
+            🚀 **咔哒英语学习工具** ${{ steps.get_version.outputs.tag_name }} macOS 版本发布
+
+            ## 📥 下载说明
+            - **`kadalingo-${{ steps.get_version.outputs.version }}.dmg`**: macOS 磁盘映像安装包，推荐使用
+            - **`kadalingo-${{ steps.get_version.outputs.version }}-mac.zip`**: macOS zip 压缩包
+
+            ## 💻 系统要求
+            - macOS 10.13 (High Sierra) 或更高版本
+            - 支持 Intel 和 Apple Silicon (M1/M2/M3) 芯片
+
+            ## 🆕 1.1.0 版本更新
+            - 🐛 修复一些问题
+
+            ## ✨ 主要功能
+            - 🎯 英语学习句子练习功能
+            - 📚 生/错词本
+            - 🎨 现代化的用户界面设计
+            - 📱 响应式设计，适配不同屏幕尺寸
+            - 📝 AI 生成课程内容，助力高效学习
+
+            ## 🔧 安装说明
+
+            ### DMG 安装方式
+            1. 下载 `.dmg` 文件
+            2. 双击打开 DMG 文件
+            3. 将应用拖拽到 Applications 文件夹
+            4. 在 Applications 文件夹中启动应用
+
+            ### ZIP 安装方式
+            1. 下载 `.zip` 文件
+            2. 解压 zip 文件
+            3. 将应用移动到 Applications 文件夹
+            4. 在 Applications 文件夹中启动应用
+
+            ## ⚠️ 首次运行提示
+            由于 macOS 的安全设置，首次运行时可能会提示"无法打开，因为无法验证开发者"。解决方法：
+            1. 打开"系统偏好设置" > "安全性与隐私"
+            2. 在"通用"标签页中，点击"仍要打开"
+            3. 或者在应用上右键，选择"打开"
+
+            如有问题，请访问 [项目主页](https://github.com/JianWang97/kadalingo) 或提交 [Issue](https://github.com/JianWang97/kadalingo/issues)。
+          files: |
+            build/*.dmg
+            build/*.zip
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        if: failure() && steps.check_version.outputs.should_release == 'true'  # 只在失败时上传，用于调试
+        with:
+          name: build-artifacts-mac
+          path: build/
+          retention-days: 7
+
+      - name: Install AWS CLI
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+          sudo installer -pkg AWSCLIV2.pkg -target /
+          aws --version
+
+      - name: Configure AWS CLI for Cloudflare R2
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set region us-east-1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+      - name: Upload to Cloudflare R2
+        if: success() && steps.check_version.outputs.should_release == 'true'
+        run: |
+          # 设置 R2 端点 URL
+          R2_ENDPOINT="https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          echo "Using R2 endpoint: $R2_ENDPOINT"
+          echo "Bucket name: ${{ secrets.R2_BUCKET_NAME }}"
+          echo "Version: ${{ steps.get_version.outputs.version }}"
+          echo "Tag name: ${{ steps.get_version.outputs.tag_name }}"
+
+          # 检查文件是否存在
+          if [ -f "build/kadalingo-${{ steps.get_version.outputs.version }}.dmg" ]; then
+            echo "✓ DMG file exists"
+          else
+            echo "❌ DMG file not found"
+            ls -lh build/
+          fi
+
+          # 查找 zip 文件（可能包含架构信息）
+          ZIP_FILE=$(find build -name "kadalingo-${{ steps.get_version.outputs.version }}*.zip" -o -name "kadalingo-*-mac.zip" | head -1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "✓ ZIP file exists: $ZIP_FILE"
+          else
+            echo "❌ ZIP file not found"
+            ls -lh build/
+          fi
+
+          # 上传 DMG 文件
+          if [ -f "build/kadalingo-${{ steps.get_version.outputs.version }}.dmg" ]; then
+            echo "Uploading DMG file..."
+            aws s3 cp "build/kadalingo-${{ steps.get_version.outputs.version }}.dmg" \
+              "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/" \
+              --endpoint-url "$R2_ENDPOINT"
+          fi
+
+          # 上传 ZIP 文件
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Uploading ZIP file..."
+            aws s3 cp "$ZIP_FILE" \
+              "s3://${{ secrets.R2_BUCKET_NAME }}/releases/${{ steps.get_version.outputs.tag_name }}/" \
+              --endpoint-url "$R2_ENDPOINT"
+          fi
+
+          # 生成并上传版本信息文件
+          echo "Generating version info..."
+          cat > version-mac.json << EOF
+{
+  "latest_version": "${{ steps.get_version.outputs.version }}",
+  "release_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "platform": "darwin"
+}
+EOF
+          echo "Version info content:"
+          cat version-mac.json
+
+          echo "Uploading version info..."
+          aws s3 cp version-mac.json \
+            "s3://${{ secrets.R2_BUCKET_NAME }}/latest-version-mac.json" \
+            --endpoint-url "$R2_ENDPOINT"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+      - name: Skip release notification
+        if: steps.check_version.outputs.should_release == 'false'
+        run: |
+          echo "🔄 版本检查: package.json 中的版本 v${{ steps.check_version.outputs.current_version }} 已经发布过，跳过本次发布"
+          echo "💡 如需强制发布，请使用手动触发或创建新的版本标签"

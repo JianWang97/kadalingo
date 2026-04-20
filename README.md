@@ -31,9 +31,25 @@
 ## 技术栈
 
 - Electron + React + TypeScript
-- Vite 
+- Vite
 - Tailwind CSS
 - IndexedDB (Dexie)
+
+## 平台支持
+
+- 🪟 **Windows** - Windows 10/11 (x64)
+  - NSIS 安装包
+  - 便携版
+- 🍎 **macOS** - macOS 10.13+
+  - Intel (x64) 和 Apple Silicon (arm64)
+  - DMG 安装包
+  - ZIP 压缩包
+- 🐧 **Linux** - Ubuntu/Debian/Fedora (x64)
+  - AppImage
+  - DEB 包
+  - RPM 包
+
+详细的 macOS 打包说明请参考 [docs/MAC_PACKAGING.md](docs/MAC_PACKAGING.md)
 
 ## 快速开始
 
@@ -56,12 +72,20 @@ npm start
 
 ### 构建打包
 ```bash
-# 构建应用
+# 构建应用（通用）
 npm run build
 
-# 生成安装包
+# 生成安装包（通用）
 npm run dist
+
+# 仅构建 macOS 版本
+npm run build:mac
+
+# 生成目录包（不生成安装包，用于测试）
+npm run dist:dir
 ```
+
+> **macOS 构建说明**: 首次构建需要生成 `.icns` 图标文件，详见 [docs/MAC_ICON_GENERATION.md](docs/MAC_ICON_GENERATION.md)
 
 ## 项目结构
 
