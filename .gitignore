@@ -99,6 +99,7 @@ out/
 dist-web/
 
 build/
+!build/entitlements.mac.plist
 
 dist/
 
